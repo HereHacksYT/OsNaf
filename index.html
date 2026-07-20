@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OsNaf - Five Nights at Osman's</title>
+    <title>OsNaf 3D - Five Nights at Osman's</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,36 +13,43 @@
         }
 
         body {
-            background-color: #050505;
+            background-color: #000;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
-        #game-container {
-            width: 1024px;
-            height: 576px;
-            position: relative;
-            background: #111;
-            border: 4px solid #333;
-            overflow: hidden;
-        }
-
-        /* UI Üst Göstergeler */
-        .ui-top {
+        /* 3D Render Alanı */
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Arayüz Katmanı */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Tıklamalar arkaya, 3D dünyaya geçsin */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+        }
+
+        .ui-top {
             display: flex;
             justify-content: space-between;
-            font-size: 24px;
-            z-index: 10;
-            text-shadow: 2px 2px #000;
+            font-size: 28px;
+            text-shadow: 3px 3px #000;
         }
 
         .power-danger {
@@ -50,169 +57,110 @@
             animation: blink 1s infinite;
         }
 
-        /* Ofis Alanı */
-        #office {
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, #222 0%, #050505 100%);
-            transition: background 0.1s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
+        /* İnteraktif Butonlar (Pointer events aktif) */
+        .interactive-hud {
+            pointer-events: auto;
         }
 
-        #office.light-on {
-            background: radial-gradient(circle, #555 0%, #1a1a1a 100%);
-        }
-
-        .desk {
-            position: absolute;
-            bottom: 0;
-            width: 60%;
-            height: 120px;
-            background: #2a1a0a;
-            border-top: 5px solid #150a00;
-            border-radius: 10px 10px 0 0;
-        }
-
-        /* Kapı Butonları */
         .door-controls {
             position: absolute;
-            bottom: 150px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            z-index: 5;
+            gap: 15px;
         }
 
-        #left-controls { left: 30px; }
+        #left-controls { left: 40px; }
+        #right-controls { right: 40px; }
 
         .btn {
-            width: 60px;
-            height: 50px;
-            border: 3px solid #555;
+            width: 80px;
+            height: 60px;
+            border: 4px solid #444;
             background: #222;
             color: white;
             font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 8px;
             font-family: inherit;
+            box-shadow: 0 5px 0 #000;
         }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #000; }
+        .btn-door.active { background: #ff2222; border-color: #770000; }
+        .btn-light.active { background: #ffff22; color: #000; border-color: #777700; }
 
-        .btn-door.active { background: #ff3333; border-color: #880000; }
-        .btn-light.active { background: #ffff33; color: black; border-color: #888800; }
-
-        /* Kapı Görselleri */
-        .door {
+        /* Kamera Monitörü Tetikleyici */
+        #camera-trigger {
             position: absolute;
-            bottom: 0;
-            width: 120px;
-            height: 80%;
-            background: #333;
-            border: 4px solid #222;
-            transition: transform 0.3s ease-in-out;
-            z-index: 4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        #left-door { left: 0; transform: translateY(-100%); }
-        #left-door.closed { transform: translateY(0); }
-
-        /* Kamera Paneli */
-        #camera-toggle {
-            position: absolute;
-            bottom: 10px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 300px;
-            height: 35px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid #fff;
+            width: 400px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 3px solid #fff;
             border-radius: 5px;
             cursor: pointer;
-            z-index: 15;
+            pointer-events: auto;
             transition: 0.2s;
         }
+        #camera-trigger:hover { background: rgba(255, 255, 255, 0.4); }
 
-        #camera-toggle:hover {
-            background: rgba(255, 255, 255, 0.4);
-        }
-
+        /* Kamera Ekranı */
         #camera-monitor {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
             z-index: 20;
             display: none;
-        }
-
-        #camera-screen {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            pointer-events: auto;
         }
 
         .static-effect {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://media.giphy.com/media/oEI9uBYSzZssw/giphy.gif') repeat;
-            opacity: 0.15;
+            opacity: 0.12;
             pointer-events: none;
         }
 
-        /* Kamera Haritası */
         .cam-map {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 220px;
-            height: 180px;
-            background: rgba(0, 0, 0, 0.75);
-            border: 2px solid #fff;
-            padding: 10px;
+            bottom: 40px;
+            right: 40px;
+            width: 260px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 3px solid #fff;
+            padding: 15px;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
         .cam-btn {
-            background: #222;
-            border: 1px solid #fff;
+            background: #111;
+            border: 2px solid #fff;
             color: #fff;
-            padding: 5px;
-            font-size: 11px;
+            font-size: 14px;
             cursor: pointer;
+            font-family: inherit;
         }
-
-        .cam-btn.active {
-            background: #00ff00;
-            color: #000;
-            font-weight: bold;
-        }
+        .cam-btn.active { background: #00ff00; color: #000; font-weight: bold; }
 
         .cam-label {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 28px;
-            background: rgba(0,0,0,0.6);
-            padding: 5px 10px;
-            border-left: 5px solid #00ff00;
+            top: 40px;
+            left: 40px;
+            font-size: 36px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-left: 8px solid #00ff00;
         }
 
-        /* Jumpscare ve Ekranlar */
+        /* Ekranlar */
         .screen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -226,306 +174,371 @@
         }
 
         #jumpscare-screen {
-            background: #100;
+            background: #0a0000;
             color: #ff0000;
-            font-size: 60px;
+            font-size: 70px;
             font-weight: bold;
-            text-align: center;
         }
-
-        .scare-anim {
-            animation: shake 0.1s infinite;
-        }
+        .scare-anim { animation: shake 0.05s infinite; }
 
         @keyframes shake {
-            0% { transform: translate(2px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(0px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(2px, 1px) rotate(-1deg); }
-            85% { transform: translate(-1px, -1px) rotate(1deg); }
-            100% { transform: translate(2px, -2px) rotate(0deg); }
+            0% { transform: translate(3px, 2px) rotate(0deg); }
+            50% { transform: translate(-3px, -2px) rotate(1deg); }
+            100% { transform: translate(2px, -3px) rotate(-1deg); }
         }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
     </style>
+    <!-- Three.js Kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="game-container">
-        <!-- ÜST ARAYÜZ -->
+    <!-- 3D Render Alanı -->
+    <div id="canvas-container"></div>
+
+    <!-- 2D HUD / ARAYÜZ -->
+    <div class="ui-layer">
         <div class="ui-top">
             <div>GÜÇ: <span id="power-display">100</span>% (Kullanım: <span id="usage-display">1</span>)</div>
             <div>SAAT: <span id="time-display">12</span> AM</div>
         </div>
 
-        <!-- OFİS -->
-        <div id="office">
-            <div id="left-door" class="door">SOL KAPI</div>
-            
-            <div class="door-controls" id="left-controls">
-                <button class="btn btn-door" onclick="toggleDoor()">KAPI</button>
-                <button class="btn btn-light" onclick="toggleLight()">IŞIK</button>
-            </div>
-
-            <div class="desk"></div>
-            
-            <!-- Monitör Açma/Kapama Butonu (Alt Çubuk) -->
-            <button id="camera-toggle" onclick="toggleMonitor()"></button>
+        <!-- Sol Kapı Kontrolleri -->
+        <div class="door-controls interactive-hud" id="left-controls">
+            <button class="btn btn-door" id="btn-left-door" onclick="toggleLeftDoor()">KAPI</button>
+            <button class="btn btn-light" id="btn-left-light" onclick="toggleLeftLight()">IŞIK</button>
         </div>
 
-        <!-- KAMERA SİSTEMİ -->
-        <div id="camera-monitor">
-            <div id="camera-screen">
-                <div class="static-effect"></div>
-                <div class="cam-label" id="cam-title">CAM 1A</div>
-                
-                <div style="font-size: 24px; color: #888;" id="cam-status">Robotlar İçeride...</div>
-
-                <!-- Kamera Haritası -->
-                <div class="cam-map">
-                    <button class="cam-btn active" onclick="switchCamera('1A')">CAM 1A</button>
-                    <button class="cam-btn" onclick="switchCamera('1B')">CAM 1B</button>
-                    <button class="cam-btn" onclick="switchCamera('2A')">CAM 2A</button>
-                    <button class="cam-btn" onclick="switchCamera('2B')">CAM 2B</button>
-                </div>
-            </div>
+        <!-- Sağ Kapı Kontrolleri -->
+        <div class="door-controls interactive-hud" id="right-controls">
+            <button class="btn btn-door" id="btn-right-door" onclick="toggleRightDoor()">KAPI</button>
+            <button class="btn btn-light" id="btn-right-light" onclick="toggleRightLight()">IŞIK</button>
         </div>
 
-        <!-- OYUN BİTTİ EKRANI (JUMPSCARE) -->
-        <div id="jumpscare-screen" class="screen">
-            <div class="scare-anim">OSNAF BUSTED! 🐻</div>
-            <div style="font-size: 20px; color: white; margin-top: 20px; cursor: pointer;" onclick="restartGame()">Yeniden Başla</div>
-        </div>
+        <!-- Kamera Monitör Butonu -->
+        <button id="camera-trigger" class="interactive-hud" onclick="toggleMonitor()"></button>
+    </div>
 
-        <!-- KAZANMA EKRANI -->
-        <div id="win-screen" class="screen">
-            <h1 style="color: #00ff00; font-size: 50px;">6 AM</h1>
-            <p style="font-size: 20px; margin-top: 10px;">Tebrikler, Geceyi Atlattın!</p>
-            <div style="font-size: 16px; color: #aaa; margin-top: 20px; cursor: pointer;" onclick="restartGame()">Tekrar Oyna</div>
+    <!-- KAMERA MONİTÖRÜ EKRANI -->
+    <div id="camera-monitor">
+        <div class="static-effect"></div>
+        <div class="cam-label" id="cam-title">CAM 1A</div>
+        <div id="cam-view-text" style="position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:24px; text-align:center; color:#aaa;"></div>
+        
+        <div class="cam-map">
+            <button class="cam-btn active" onclick="switchCamera('1A')">CAM 1A (Sahne)</button>
+            <button class="cam-btn" onclick="switchCamera('1B')">CAM 1B (Koridor)</button>
+            <button class="cam-btn" onclick="switchCamera('2A')">CAM 2A (Sol Eşik)</button>
+            <button class="cam-btn" onclick="switchCamera('2B')">CAM 2B (Sağ Eşik)</button>
         </div>
     </div>
 
+    <!-- JUMPSCARE EKRANI -->
+    <div id="jumpscare-screen" class="screen">
+        <div class="scare-anim">🐻 OSNAF YAKALADI! 🐻</div>
+        <div style="font-size: 24px; color: white; margin-top: 30px; cursor: pointer;" onclick="location.reload()">YENİDEN DENE</div>
+    </div>
+
+    <!-- KAZANMA EKRANI -->
+    <div id="win-screen" class="screen">
+        <h1 style="color: #00ff00; font-size: 60px;">6 AM</h1>
+        <p style="font-size: 24px; margin-top: 15px;">Tebrikler! Güvendesin.</p>
+        <div style="font-size: 20px; color: #aaa; margin-top: 30px; cursor: pointer;" onclick="location.reload()">TEKRAR OYNA</div>
+    </div>
+
     <script>
-        // Oyun Durumu Değişkenleri
-        let power = 100;
-        let usage = 1;
-        let time = 0; // 0 = 12 AM, 1 = 1 AM ... 6 = 6 AM
-        let isDoorClosed = false;
-        let isLightOn = false;
-        let isMonitorOpen = false;
-        let currentCam = '1A';
-        let gameActive = true;
+        // --- OYUN DEĞİŞKENLERİ ---
+        let power = 100, usage = 1, time = 0, gameActive = true;
+        let leftDoorClosed = false, leftLightOn = false;
+        let rightDoorClosed = false, rightLightOn = false;
+        let monitorOpen = false, currentCam = '1A';
+        
+        // Robot Konumu: '1A', '1B', '2A' (Sol Kapı Önü), '2B' (Sağ Kapı Önü), 'ATTACK'
+        let robotPos = '1A';
 
-        // Yapay Zeka (Animatronic) Konumu
-        // 1A (Sahne) -> 1B (Yemek Alanı) -> 2A (Koridor) -> 2B (Kapı Önü) -> Ofis (Jumpscare)
-        let robotPos = '1A'; 
+        // --- THREE.JS BİLEŞENLERİ ---
+        let scene, camera, renderer;
+        let officeRoom, desk;
+        let leftDoorMesh, rightDoorMesh;
+        let mainLight, leftOfficeLight, rightOfficeLight;
+        let jumpscareRobot;
 
-        // Zamanlayıcılar
-        let gameInterval;
-        let robotInterval;
+        // Fare Hareket Takibi (Sağa sola bakma için)
+        let targetRotationY = 0;
+        let mouseX = 0;
 
-        function startGame() {
-            gameInterval = setInterval(() => {
+        init3D();
+        setupGameLogic();
+        animate();
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            
+            // Sahne ve Kamera
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020202);
+            scene.fog = new THREE.FogExp2(0x020202, 0.08);
+
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 0); // Oyuncu odanın merkezinde
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // --- 3D MODELLEME (KODLA) ---
+            
+            // 1. Ofis Duvarları (Ters Çevrilmiş Büyük Küp)
+            const roomGeo = new THREE.BoxGeometry(16, 8, 12);
+            const roomMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, side: THREE.BackSide, roughness: 0.8 });
+            officeRoom = new THREE.Mesh(roomGeo, roomMat);
+            scene.add(officeRoom);
+
+            // 2. Masa (Oyuncunun Önünde)
+            const deskGeo = new THREE.BoxGeometry(6, 0.2, 2.5);
+            const deskMat = new THREE.MeshStandardMaterial({ color: 0x3a2212, roughness: 0.6 });
+            desk = new THREE.Mesh(deskGeo, deskMat);
+            desk.position.set(0, -1.5, -3.5);
+            scene.add(desk);
+
+            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 2);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x111 });
+            let leg1 = new THREE.Mesh(legGeo, legMat); leg1.position.set(-2.8, -2.5, -4.5); scene.add(leg1);
+            let leg2 = new THREE.Mesh(legGeo, legMat); leg2.position.set(2.8, -2.5, -4.5); scene.add(leg2);
+
+            // 3. Sol ve Sağ Kapı Boşlukları/Kapıları
+            const doorGeo = new THREE.BoxGeometry(0.2, 5, 3.5);
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.5, roughness: 0.5 });
+            
+            leftDoorMesh = new THREE.Mesh(doorGeo, doorMat);
+            leftDoorMesh.position.set(-7.9, 1, 0); // Yüksekte başlıyor (Açık)
+            scene.add(leftDoorMesh);
+
+            rightDoorMesh = new THREE.Mesh(doorGeo, doorMat);
+            rightDoorMesh.position.set(7.9, 1, 0); // Yüksekte başlıyor
+            scene.add(rightDoorMesh);
+
+            // 4. Jumpscare İçin Gizli Bekleyen Robot Model Tasarımı
+            const botGroup = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 1.5), new THREE.MeshStandardMaterial({color: 0x554433}));
+            body.position.y = 0;
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({color: 0x554433}));
+            head.position.y = 1.6;
+            const eyeMat = new THREE.MeshBasicMaterial({color: 0xff0000});
+            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.15), eyeMat); eyeL.position.set(0.3, 1.7, 0.5);
+            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.15), eyeMat); eyeR.position.set(-0.3, 1.7, 0.5);
+            botGroup.add(body, head, eyeL, eyeR);
+            
+            jumpscareRobot = botGroup;
+            jumpscareRobot.position.set(0, -1, -2.5); // Önümüzde gizli
+            jumpscareRobot.visible = false;
+            scene.add(jumpscareRobot);
+
+            // --- AYDINLATMA ---
+            // Oda Tavan Işığı (Genel Loşluk)
+            mainLight = new THREE.PointLight(0xffffff, 0.2, 20);
+            mainLight.position.set(0, 3, -2);
+            scene.add(mainLight);
+
+            // Sol ve Sağ Kapı Işıkları (Varsayılan olarak kapalı/şiddeti 0)
+            leftOfficeLight = new THREE.PointLight(0xffffaa, 0, 10);
+            leftOfficeLight.position.set(-7, 1, 0);
+            scene.add(leftOfficeLight);
+
+            rightOfficeLight = new THREE.PointLight(0xffffaa, 0, 10);
+            rightOfficeLight.position.set(7, 1, 0);
+            scene.add(rightOfficeLight);
+
+            // Fare Dinleyicisi
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Fare Hareketine Göre Sağa Sola Dönüş Algoritması
+        function onMouseMove(event) {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            // Ekrana göre kameranın dönebileceği maksimum radyan açısı
+            targetRotationY = -mouseX * 1.1; 
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- BUTON FONKSİYONLARI ---
+        function toggleLeftDoor() {
+            if (!gameActive || power <= 0) return;
+            leftDoorClosed = !leftDoorClosed;
+            document.getElementById('btn-left-door').classList.toggle('active', leftDoorClosed);
+        }
+
+        function toggleLeftLight() {
+            if (!gameActive || power <= 0) return;
+            leftLightOn = !leftLightOn;
+            document.getElementById('btn-left-light').classList.toggle('active', leftLightOn);
+            leftOfficeLight.intensity = leftLightOn ? 2.5 : 0;
+        }
+
+        function toggleRightDoor() {
+            if (!gameActive || power <= 0) return;
+            rightDoorClosed = !rightDoorClosed;
+            document.getElementById('btn-right-door').classList.toggle('active', rightDoorClosed);
+        }
+
+        function toggleRightLight() {
+            if (!gameActive || power <= 0) return;
+            rightLightOn = !rightLightOn;
+            document.getElementById('btn-right-light').classList.toggle('active', rightLightOn);
+            rightOfficeLight.intensity = rightLightOn ? 2.5 : 0;
+        }
+
+        function toggleMonitor() {
+            if (!gameActive || power <= 0) return;
+            monitorOpen = !monitorOpen;
+            document.getElementById('camera-monitor').style.display = monitorOpen ? 'block' : 'none';
+            updateCameraViewText();
+        }
+
+        function switchCamera(cam) {
+            currentCam = cam;
+            document.getElementById('cam-title').innerText = "CAM " + cam;
+            document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            updateCameraViewText();
+        }
+
+        function updateCameraViewText() {
+            const txt = document.getElementById('cam-view-text');
+            if (robotPos === currentCam) {
+                txt.innerHTML = "<span style='color:#ff2222; font-weight:bold;'>⚠️ ANALİZ:</span> Bir silüet hareket ediyor... Gözleri parlıyor!";
+            } else {
+                txt.innerHTML = "Sinyal Aktif. Bölge temiz görünüyor.";
+            }
+        }
+
+        // --- OYUN MANTIĞI VE YAPAY ZEKA ---
+        function setupGameLogic() {
+            // Güç tüketimi ve döngüler
+            setInterval(() => {
                 if (!gameActive) return;
 
-                // 1. Enerji Tüketimi Hesabı
                 let currentUsage = 1;
-                if (isDoorClosed) currentUsage++;
-                if (isLightOn) currentUsage++;
-                if (isMonitorOpen) currentUsage++;
-                
+                if (leftDoorClosed) currentUsage++;
+                if (rightDoorClosed) currentUsage++;
+                if (leftLightOn) currentUsage++;
+                if (rightLightOn) currentUsage++;
+                if (monitorOpen) currentUsage++;
+
                 usage = currentUsage;
                 document.getElementById('usage-display').innerText = usage;
 
-                power -= (usage * 0.5);
+                power -= (usage * 0.4);
                 if (power <= 0) {
                     power = 0;
-                    triggerPowerOutage();
+                    triggerPowerOut();
                 }
                 document.getElementById('power-display').innerText = Math.floor(power);
-                if(power < 20) {
-                    document.getElementById('power-display').parentElement.classList.add('power-danger');
-                }
+                if(power < 20) document.getElementById('power-display').parentElement.classList.add('power-danger');
 
-                // 2. Saat İlerlemesi (Her 30 saniyede bir saat artsın)
-                // Hızlı test için süreyi kısa tutabilirsin
             }, 1000);
 
-            // Saat Sayacı (Her 45 saniyede bir 1 saat geçsin)
+            // Saat sistemi (Her 40 saniyede bir saat ilerler)
             setInterval(() => {
                 if (!gameActive) return;
                 time++;
                 if (time === 6) {
-                    winGame();
+                    gameActive = false;
+                    document.getElementById('win-screen').style.display = 'flex';
                 } else {
                     document.getElementById('time-display').innerText = time;
                 }
-            }, 45000);
+            }, 40000);
 
-            // Robot Yapay Zekası Döngüsü (Her 7 saniyede bir hareket şansı)
-            robotInterval = setInterval(() => {
+            // Yapay Zeka Hareketi (Her 8 saniyede bir yer değiştirme şansı)
+            setInterval(() => {
                 if (!gameActive) return;
-                moveRobot();
-            }, 7000);
-        }
 
-        // Kapı Fonksiyonu
-        function toggleDoor() {
-            if (!gameActive || power <= 0) return;
-            isDoorClosed = !isDoorClosed;
-            const doorEl = document.getElementById('left-door');
-            const btnEl = document.querySelector('.btn-door');
-            
-            if (isDoorClosed) {
-                doorEl.classList.add('closed');
-                btnEl.classList.add('active');
-            } else {
-                doorEl.classList.remove('closed');
-                btnEl.classList.remove('active');
-            }
-        }
-
-        // Işık Fonksiyonu
-        function toggleLight() {
-            if (!gameActive || power <= 0) return;
-            isLightOn = !isLightOn;
-            const officeEl = document.getElementById('office');
-            const btnEl = document.querySelector('.btn-light');
-
-            if (isLightOn) {
-                officeEl.classList.add('light-on');
-                btnEl.classList.add('active');
-                if(robotPos === '2B') {
-                    document.getElementById('cam-status').innerText = "KAPIDA BİRİ VAR!!";
+                if (robotPos === '1A') {
+                    robotPos = '1B';
+                } else if (robotPos === '1B') {
+                    // Rastgele sol veya sağ eşiğe yönelir
+                    robotPos = Math.random() > 0.5 ? '2A' : '2B';
+                } else if (robotPos === '2A') {
+                    // Sol Kapı Kontrolü
+                    if (leftDoorClosed) {
+                        robotPos = '1A'; // Püskürtüldü, sahneye geri gitti
+                    } else {
+                        triggerJumpscare();
+                    }
+                } else if (robotPos === '2B') {
+                    // Sağ Kapı Kontrolü
+                    if (rightDoorClosed) {
+                        robotPos = '1A';
+                    } else {
+                        triggerJumpscare();
+                    }
                 }
-            } else {
-                officeEl.classList.remove('light-on');
-                btnEl.classList.remove('active');
-            }
+                updateCameraViewText();
+            }, 8000);
         }
 
-        // Monitör Aç/Kapat
-        function toggleMonitor() {
-            if (!gameActive || power <= 0) return;
-            isMonitorOpen = !isMonitorOpen;
-            const monitorEl = document.getElementById('camera-monitor');
-            monitorEl.style.display = isMonitorOpen ? 'block' : 'none';
-            updateCamScreen();
-        }
-
-        // Kamera Değiştirme
-        function switchCamera(camName) {
-            currentCam = camName;
-            document.getElementById('cam-title').innerText = "CAM " + camName;
-            
-            // Buton aktiflik sınıflarını güncelle
-            document.querySelectorAll('.cam-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if(btn.innerText === "CAM " + camName) btn.classList.add('active');
-            });
-
-            updateCamScreen();
-        }
-
-        // Kamera Ekran İçeriğini Güncelleme
-        function updateCamScreen() {
-            const statusEl = document.getElementById('cam-status');
-            if (robotPos === currentCam) {
-                statusEl.innerText = "⚠️ DİKKAT: Robot burada hareket ediyor!";
-                statusEl.style.color = "#ff3333";
-            } else {
-                statusEl.innerText = "Kamera temiz. Şüpheli bir hareket yok.";
-                statusEl.style.color = "#888";
-            }
-        }
-
-        // Robot Hareket Algoritması
-        function moveRobot() {
-            if (robotPos === '1A') {
-                robotPos = '1B';
-            } else if (robotPos === '1B') {
-                robotPos = '2A';
-            } else if (robotPos === '2A') {
-                robotPos = '2B'; // Kapı eşiğine geldi
-            } else if (robotPos === '2B') {
-                // Eğer kapı kapalıysa geri döner, açıksa içeri girip saldırır!
-                if (isDoorClosed) {
-                    robotPos = '1B'; // Püskürtüldü, geri yolladık
-                    isDoorClosed = false;
-                    toggleDoor(); // Kapıyı otomatik açalım (isteğe bağlı)
-                } else {
-                    triggerJumpscare();
-                }
-            }
-            updateCamScreen();
-        }
-
-        // Güç Tükenmesi Durumu
-        function triggerPowerOutage() {
+        function triggerPowerOut() {
             gameActive = false;
-            isDoorClosed = false;
-            isLightOn = false;
-            isMonitorOpen = false;
-            document.getElementById('left-door').classList.remove('closed');
-            document.getElementById('office').classList.remove('light-on');
+            leftDoorClosed = false; rightDoorClosed = false;
+            leftLightOn = false; rightLightOn = false;
+            monitorOpen = false;
             document.getElementById('camera-monitor').style.display = 'none';
-            
-            // Güç bittikten 4 saniye sonra ani saldırı
+            mainLight.intensity = 0;
+            leftOfficeLight.intensity = 0;
+            rightOfficeLight.intensity = 0;
+
             setTimeout(() => {
                 triggerJumpscare();
-            }, 4000);
+            }, 3500);
         }
 
-        // Jumpscare (Kaybetme)
         function triggerJumpscare() {
             gameActive = false;
-            clearInterval(gameInterval);
-            clearInterval(robotInterval);
+            monitorOpen = false;
+            document.getElementById('camera-monitor').style.display = 'none';
+            
+            // 3D robotu önümüze getir ve görünür yap
+            jumpscareRobot.visible = true;
+            mainLight.intensity = 3; // Korkunç parlak flaş efekti
+            mainLight.color.setHex(0xff0000);
+
             document.getElementById('jumpscare-screen').style.display = 'flex';
         }
 
-        // Oyunu Kazanma
-        function winGame() {
-            gameActive = false;
-            clearInterval(gameInterval);
-            clearInterval(robotInterval);
-            document.getElementById('win-screen').style.display = 'flex';
+        // --- RENDER DÖNGÜSÜ (ANIMATION LOOP) ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameActive) {
+                // Kameranın fareyi yumuşak takip etmesi (Lerp)
+                camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.08;
+            }
+
+            // 3D Kapıların Kapanma/Açılma Animasyonu
+            // Kapanınca Y ekseninde aşağı (-1.5), açılınca yukarı (1.5) kayar
+            const targetLeftY = leftDoorClosed ? -1.5 : 2.5;
+            leftDoorMesh.position.y += (targetLeftY - leftDoorMesh.position.y) * 0.2;
+
+            const targetRightY = rightDoorClosed ? -1.5 : 2.5;
+            rightDoorMesh.position.y += (targetRightY - rightDoorMesh.position.y) * 0.2;
+
+            // Eğer jumpscare tetiklendiyse robot oyuncuya doğru sarsılarak büyüsün/yaklaşsın
+            if (jumpscareRobot.visible) {
+                jumpscareRobot.position.z += (0 - jumpscareRobot.position.z) * 0.2;
+                jumpscareRobot.rotation.z = Math.sin(Date.now() * 0.05) * 0.2;
+            }
+
+            renderer.render(scene, camera);
         }
-
-        // Yeniden Başlatma
-        function restartGame() {
-            power = 100;
-            usage = 1;
-            time = 0;
-            robotPos = '1A';
-            isDoorClosed = false;
-            isLightOn = false;
-            isMonitorOpen = false;
-            gameActive = true;
-
-            document.getElementById('time-display').innerText = "12";
-            document.getElementById('power-display').innerText = "100";
-            document.getElementById('power-display').parentElement.classList.remove('power-danger');
-            document.getElementById('left-door').classList.remove('closed');
-            document.getElementById('office').classList.remove('light-on');
-            document.getElementById('camera-monitor').style.display = 'none';
-            document.getElementById('jumpscare-screen').style.display = 'none';
-            document.getElementById('win-screen').style.display = 'none';
-
-            clearInterval(gameInterval);
-            clearInterval(robotInterval);
-            startGame();
-        }
-
-        // Oyunu ilk kez tetikle
-        startGame();
     </script>
 </body>
 </html>
