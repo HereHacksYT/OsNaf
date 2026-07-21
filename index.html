@@ -2,16 +2,17 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, touch-action: manipulation">
   <title>OsNaf - Five Nights at Freddy's Web</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    * { box-sizing: border-box; }
     body {
       margin: 0; overflow: hidden;
       font-family: 'Press Start 2P', monospace;
       background: #000;
       user-select: none; -webkit-user-select: none;
-      touch-action: manipulation;
+      touch-action: manipulation; /* Mobil dokunma olayları için */
     }
     #gameCanvas {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
@@ -36,10 +37,7 @@
     }
     #mainMenu.active { display: flex; }
     #mainMenu h1 { font-size: 4em; margin: 0; letter-spacing: 8px; animation: flicker 2s infinite; color: #ff4444; }
-    @keyframes flicker {
-      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
-      20%, 24%, 55% { opacity: 0.3; }
-    }
+    @keyframes flicker { 0%,19%,21%,23%,25%,54%,56%,100%{opacity:1} 20%,24%,55%{opacity:0.3} }
     .subtitle { font-size: 0.9em; margin-bottom: 50px; color: #aaa; letter-spacing: 4px; }
     .night-select { display: flex; gap: 20px; margin-bottom: 40px; flex-wrap: wrap; justify-content: center; }
     .night-btn {
@@ -57,69 +55,89 @@
     #gameUI.active { display: block; }
     #topBar {
       position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 60px; align-items: center; background: rgba(0,0,0,0.8);
-      padding: 12px 30px; border: 2px solid #333; border-radius: 5px; color: #fff;
-      font-size: 1.1em; pointer-events: auto;
+      display: flex; gap: 30px; align-items: center; background: rgba(0,0,0,0.8);
+      padding: 10px 20px; border: 2px solid #333; border-radius: 5px; color: #fff;
+      font-size: 0.9em; pointer-events: auto;
     }
     .power-indicator { color: #00ff00; text-shadow: 0 0 10px #00ff00; }
     .power-indicator.warning { color: #ffaa00; text-shadow: 0 0 10px #ffaa00; }
     .power-indicator.danger { color: #ff0000; text-shadow: 0 0 15px #ff0000; animation: blink 0.5s infinite; }
-    @keyframes blink { 50% { opacity: 0.3; } }
-    .time-indicator { color: #ffffff; font-size: 1.4em; }
+    @keyframes blink { 50%{opacity:0.3} }
+    .time-indicator { color: #ffffff; font-size: 1.2em; }
     #bottomControls {
-      position: absolute; bottom: 30px; left: 0; width: 100%;
-      display: flex; justify-content: space-between; padding: 0 10%; box-sizing: border-box; pointer-events: auto;
+      position: absolute; bottom: 20px; left: 0; width: 100%;
+      display: flex; justify-content: space-between; padding: 0 5%; box-sizing: border-box; pointer-events: auto;
     }
-    .door-control { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+    .door-control { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .ctrl-btn {
-      font-family: 'Press Start 2P', monospace; font-size: 0.7em; padding: 15px 20px;
+      font-family: 'Press Start 2P', monospace; font-size: 0.65em; padding: 12px 15px;
       background: rgba(20,20,20,0.9); color: #ccc; border: 2px solid #555; cursor: pointer;
-      transition: all 0.2s; pointer-events: auto; text-transform: uppercase; letter-spacing: 2px; border-radius: 4px;
+      transition: all 0.2s; pointer-events: auto; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px;
     }
     .ctrl-btn:active, .ctrl-btn.pressed { background: #444; border-color: #fff; color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
     .ctrl-btn.door-closed { background: #550000; border-color: #ff0000; color: #ff4444; box-shadow: 0 0 20px rgba(255,0,0,0.6); }
     .ctrl-btn.light-on { background: #444400; border-color: #ffff00; color: #ffff00; box-shadow: 0 0 20px rgba(255,255,0,0.5); }
+    /* Tablet */
     #tabletOverlay {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      width: 75%; max-width: 800px; aspect-ratio: 4/3; background: #111; border: 8px solid #444;
-      border-radius: 15px; display: none; z-index: 20; pointer-events: auto; flex-direction: column;
+      width: 85%; max-width: 800px; aspect-ratio: 4/3; background: #111; border: 6px solid #444;
+      border-radius: 10px; display: none; z-index: 20; pointer-events: auto; flex-direction: column;
       box-shadow: 0 0 50px rgba(0,0,0,0.9);
     }
     #tabletOverlay.active { display: flex; }
-    #tabletHeader { background: #222; padding: 10px; text-align: center; color: #fff; font-size: 0.7em; border-bottom: 2px solid #555; }
-    #cameraGrid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; padding: 10px; flex: 1; background: #0a0a0a; }
-    .cam-cell { background: #1a1a1a; border: 1px solid #333; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.5em; cursor: pointer; transition: all 0.2s; position: relative; text-align: center; padding: 5px; }
+    #tabletHeader { background: #222; padding: 8px; text-align: center; color: #fff; font-size: 0.6em; border-bottom: 2px solid #555; }
+    #cameraGrid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 3px; padding: 8px; flex: 1; background: #0a0a0a; }
+    .cam-cell { background: #1a1a1a; border: 1px solid #333; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.45em; cursor: pointer; transition: all 0.2s; position: relative; text-align: center; padding: 3px; }
     .cam-cell:hover { border-color: #888; background: #222; }
     .cam-cell.selected { border: 2px solid #00ff00; box-shadow: 0 0 10px #00ff00; color: #fff; }
-    .cam-cell .anim-indicator { position: absolute; bottom: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%; background: #ff0000; box-shadow: 0 0 8px #ff0000; display: none; }
+    .cam-cell .anim-indicator { position: absolute; bottom: 3px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: #ff0000; box-shadow: 0 0 6px #ff0000; display: none; }
     .cam-cell .anim-indicator.visible { display: block; }
-    #tabletClose { font-family: 'Press Start 2P', monospace; background: #550000; color: #fff; border: none; padding: 15px; cursor: pointer; font-size: 0.7em; letter-spacing: 2px; border-top: 2px solid #555; border-radius: 0 0 8px 8px; }
-    #tabletClose:hover { background: #880000; }
-    #jumpscareOverlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50;
-      display: none; background: #000; justify-content: center; align-items: center; flex-direction: column;
+    #tabletClose { font-family: 'Press Start 2P', monospace; background: #550000; color: #fff; border: none; padding: 12px; cursor: pointer; font-size: 0.65em; letter-spacing: 1px; border-top: 2px solid #555; border-radius: 0 0 8px 8px; }
+    /* Jumpscare */
+    #jumpscareOverlay { position: absolute; top:0; left:0; width:100%; height:100%; z-index:50; display:none; background:#000; justify-content:center; align-items:center; flex-direction:column; }
+    #jumpscareOverlay.active { display:flex; }
+    #jumpscareCanvas { max-width:90%; max-height:90%; animation:shake 0.15s infinite; }
+    @keyframes shake { 0%{transform:translate(2px,0)rotate(0.5deg)} 25%{transform:translate(-3px,2px)rotate(-0.5deg)} 50%{transform:translate(1px,-2px)rotate(0.3deg)} 75%{transform:translate(-2px,-1px)rotate(-0.3deg)} 100%{transform:translate(2px,1px)rotate(0.5deg)} }
+    .gameover-text { color:#ff0000; font-size:2em; margin-top:30px; text-shadow:0 0 30px #ff0000; animation:blink 0.3s infinite; }
+    /* Kazanma */
+    #winOverlay { position:absolute; top:0; left:0; width:100%; height:100%; z-index:60; background:radial-gradient(circle,#111 0%,#000 90%); display:none; flex-direction:column; align-items:center; justify-content:center; color:#ffdd00; }
+    #winOverlay.active { display:flex; }
+    #winOverlay h2 { font-size:2.5em; text-shadow:0 0 30px #ffdd00; }
+    #backToMenu { font-family:'Press Start 2P',monospace; font-size:0.9em; margin-top:40px; padding:15px 30px; background:#222; color:#ffdd00; border:2px solid #ffdd00; cursor:pointer; }
+
+    /* Uçuş modu butonu */
+    #droneBtn {
+      position: absolute; top: 20px; right: 20px; z-index: 30; pointer-events: auto;
+      font-family: 'Press Start 2P', monospace; font-size: 0.7em; padding: 12px;
+      background: rgba(0,0,0,0.8); color: #0ff; border: 2px solid #0ff; border-radius: 8px;
+      cursor: pointer; display: none; /* oyun aktifken göster */
     }
-    #jumpscareOverlay.active { display: flex; }
-    #jumpscareCanvas { max-width: 90%; max-height: 90%; animation: shake 0.15s infinite; }
-    @keyframes shake {
-      0% { transform: translate(2px, 0) rotate(0.5deg); } 25% { transform: translate(-3px, 2px) rotate(-0.5deg); }
-      50% { transform: translate(1px, -2px) rotate(0.3deg); } 75% { transform: translate(-2px, -1px) rotate(-0.3deg); }
-      100% { transform: translate(2px, 1px) rotate(0.5deg); }
+    #droneBtn.active { background: #033; color: #fff; border-color: #fff; }
+
+    /* Joystick alanları */
+    #joystickContainer {
+      position: absolute; bottom: 120px; left: 30px; width: 120px; height: 120px;
+      z-index: 35; pointer-events: auto; display: none;
     }
-    .gameover-text { color: #ff0000; font-size: 2em; margin-top: 30px; text-shadow: 0 0 30px #ff0000; animation: blink 0.3s infinite; }
-    #winOverlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 60;
-      background: radial-gradient(circle, #111 0%, #000 90%);
-      display: none; flex-direction: column; align-items: center; justify-content: center; color: #ffdd00;
+    #joystickBase {
+      width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.3); position: relative;
     }
-    #winOverlay.active { display: flex; }
-    #winOverlay h2 { font-size: 2.5em; text-shadow: 0 0 30px #ffdd00; }
-    #backToMenu { font-family: 'Press Start 2P', monospace; font-size: 0.9em; margin-top: 40px; padding: 15px 30px; background: #222; color: #ffdd00; border: 2px solid #ffdd00; cursor: pointer; }
-    /* Kamera preset göstergesi */
-    #cameraPresetIndicator {
-      position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.7); color: #0f0; padding: 5px 15px; border-radius: 10px;
-      font-size: 0.6em; display: none; z-index: 30; pointer-events: none;
+    #joystickThumb {
+      position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+      background: rgba(255,255,255,0.4); border-radius: 50%;
+      transform: translate(-50%, -50%); pointer-events: none;
+    }
+    #lookArea {
+      position: absolute; top: 0; right: 0; width: 50%; height: 100%;
+      z-index: 34; pointer-events: auto; display: none;
+    }
+
+    /* Koordinat göstergesi */
+    #coordDisplay {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.6); font-family: monospace; font-size: 0.8em;
+      z-index: 36; pointer-events: none; display: none; text-shadow: 1px 1px 3px black;
     }
   </style>
 </head>
@@ -154,7 +172,7 @@
         <button id="lightLeft" class="ctrl-btn">🔦 Işık</button>
         <button id="doorLeft" class="ctrl-btn">🚪 Kapı</button>
       </div>
-      <button id="openTablet" class="ctrl-btn" style="align-self:center; padding:20px 30px; font-size:0.8em;">📹 Kamera</button>
+      <button id="openTablet" class="ctrl-btn" style="align-self:center; padding:15px 20px; font-size:0.7em;">📹 Kamera</button>
       <div class="door-control">
         <button id="lightRight" class="ctrl-btn">🔦 Işık</button>
         <button id="doorRight" class="ctrl-btn">🚪 Kapı</button>
@@ -178,7 +196,16 @@
     <p style="font-size:1.5em;">Hayatta Kaldın!</p>
     <button id="backToMenu">Menüye Dön</button>
   </div>
-  <div id="cameraPresetIndicator">Uçuş Modu | F: çıkış | 1-9: preset</div>
+
+  <!-- Uçuş modu arayüzü -->
+  <button id="droneBtn">🚁 UÇUŞ</button>
+  <div id="joystickContainer">
+    <div id="joystickBase">
+      <div id="joystickThumb"></div>
+    </div>
+  </div>
+  <div id="lookArea"></div>
+  <div id="coordDisplay">X: 0.0 Y: 0.0 Z: 0.0</div>
 
   <script type="importmap">
     {
@@ -208,7 +235,12 @@
     const jumpscareCanvas = document.getElementById('jumpscareCanvas');
     const winOverlay = document.getElementById('winOverlay');
     const backToMenuBtn = document.getElementById('backToMenu');
-    const presetIndicator = document.getElementById('cameraPresetIndicator');
+    const droneBtn = document.getElementById('droneBtn');
+    const joystickContainer = document.getElementById('joystickContainer');
+    const joystickBase = document.getElementById('joystickBase');
+    const joystickThumb = document.getElementById('joystickThumb');
+    const lookArea = document.getElementById('lookArea');
+    const coordDisplay = document.getElementById('coordDisplay');
 
     const doorLeftBtn = document.getElementById('doorLeft');
     const doorRightBtn = document.getElementById('doorRight');
@@ -245,7 +277,7 @@
     ];
     let currentCameraIndex = 0;
 
-    // ==================== THREE.JS KURULUMU ====================
+    // ==================== THREE.JS ====================
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -265,9 +297,7 @@
     // Işıklar
     scene.add(new THREE.AmbientLight(0x111122, 0.4));
     const overheadLight = new THREE.PointLight(0x444455, 4, 12);
-    overheadLight.position.set(0, 3.5, -1);
-    overheadLight.castShadow = true;
-    scene.add(overheadLight);
+    overheadLight.position.set(0, 3.5, -1); overheadLight.castShadow = true; scene.add(overheadLight);
 
     const leftDoorLight = new THREE.SpotLight(0xffeedd, 10, 15, Math.PI/6, 0.3, 1);
     leftDoorLight.position.set(-4,1.5,-2); leftDoorLight.target.position.set(-4,0.5,-5);
@@ -277,6 +307,12 @@
     rightDoorLight.position.set(4,1.5,-2); rightDoorLight.target.position.set(4,0.5,-5);
     rightDoorLight.visible = false; scene.add(rightDoorLight); scene.add(rightDoorLight.target);
 
+    // Kamera arkası ışık (uçuş modu için)
+    const droneLight = new THREE.PointLight(0xffffff, 2, 10);
+    droneLight.position.set(0,0,0);
+    droneLight.visible = false;
+    camera.add(droneLight); // Kameraya bağlı, arkayı aydınlatır
+
     let leftDoorPanel, rightDoorPanel;
     function createSimpleDoorPanels() {
       const geo = new THREE.BoxGeometry(0.15,2.3,1.0);
@@ -285,63 +321,114 @@
       rightDoorPanel = new THREE.Mesh(geo, mat); rightDoorPanel.position.set(4,1.15,-3.5); rightDoorPanel.name='rightDoorPanel'; scene.add(rightDoorPanel);
     }
 
-    // ==================== UÇUŞ KAMERASI ====================
+    // ==================== UÇUŞ MODU (JOYSTICK) ====================
     let flyMode = false;
-    const flySpeed = 5.0;
-    const keys = { w:false, a:false, s:false, d:false, q:false, e:false };
+    const flySpeed = 4.0;
+    let joystickActive = false;
+    let joystickVector = new THREE.Vector2(0,0);
+    let lookDelta = new THREE.Vector2(0,0);
     const euler = new THREE.Euler(0,0,0,'YXZ');
-    let mouseDown = false;
-
-    // Sizin ekleyeceğiniz koordinatlar için preset dizisi
-    const cameraPresets = [
-      { name:'Ofis (varsayılan)', position: new THREE.Vector3(0, 1.7, 0.8), target: new THREE.Vector3(0, 1.5, -2) },
-      { name:'Sahne (1A)', position: new THREE.Vector3(0, 2.5, -8), target: new THREE.Vector3(0, 1.5, -8) },
-      { name:'Korsan Koyu (1C)', position: new THREE.Vector3(3, 2, -7), target: new THREE.Vector3(3, 1, -8) },
-      { name:'Batı Koridor (2A)', position: new THREE.Vector3(-5, 1.5, -6), target: new THREE.Vector3(-6, 1.5, -6) },
-      { name:'Doğu Koridor (4A)', position: new THREE.Vector3(5, 1.5, -6), target: new THREE.Vector3(6, 1.5, -6) },
-      // Yeni koordinatları buraya ekleyin
-    ];
+    let lastLookTouch = null;
 
     function setFlyMode(active) {
       flyMode = active;
-      presetIndicator.style.display = active ? 'block' : 'none';
+      droneBtn.classList.toggle('active', active);
+      joystickContainer.style.display = active ? 'block' : 'none';
+      lookArea.style.display = active ? 'block' : 'none';
+      coordDisplay.style.display = active ? 'block' : 'none';
+      droneLight.visible = active;
       if (active) {
-        // Uçuş moduna geçerken mevcut kamera açısını koru
         euler.setFromQuaternion(camera.quaternion);
+        // Joystick sıfırla
+        joystickVector.set(0,0);
+        joystickThumb.style.transform = 'translate(-50%, -50%)';
       }
     }
 
-    function handleMouseMove(e) {
-      if (!flyMode || !mouseDown) return;
-      const movementX = e.movementX || 0;
-      const movementY = e.movementY || 0;
-      euler.setFromQuaternion(camera.quaternion);
-      euler.y -= movementX * 0.002;
-      euler.x -= movementY * 0.002;
-      euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
-      camera.quaternion.setFromEuler(euler);
+    // Joystick olayları
+    joystickBase.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      joystickActive = true;
+      updateJoystick(e.touches[0]);
+    });
+    joystickBase.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (joystickActive) updateJoystick(e.touches[0]);
+    });
+    joystickBase.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      joystickActive = false;
+      joystickVector.set(0,0);
+      joystickThumb.style.transform = 'translate(-50%, -50%)';
+    });
+    joystickBase.addEventListener('touchcancel', () => {
+      joystickActive = false;
+      joystickVector.set(0,0);
+      joystickThumb.style.transform = 'translate(-50%, -50%)';
+    });
+
+    function updateJoystick(touch) {
+      const rect = joystickBase.getBoundingClientRect();
+      const centerX = rect.left + rect.width/2;
+      const centerY = rect.top + rect.height/2;
+      const maxDist = rect.width/2 - 20;
+      let dx = touch.clientX - centerX;
+      let dy = touch.clientY - centerY;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist > maxDist) {
+        dx = dx / dist * maxDist;
+        dy = dy / dist * maxDist;
+      }
+      joystickVector.set(dx / maxDist, -dy / maxDist); // normalize
+      joystickThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     }
 
-    function handleFlyMovement(deltaTime) {
+    // Bakış alanı (sağ taraf)
+    lookArea.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      lastLookTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    });
+    lookArea.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!lastLookTouch) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastLookTouch.x;
+      const dy = touch.clientY - lastLookTouch.y;
+      lookDelta.set(dx, dy);
+      lastLookTouch = { x: touch.clientX, y: touch.clientY };
+    });
+    lookArea.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      lastLookTouch = null;
+      lookDelta.set(0,0);
+    });
+    lookArea.addEventListener('touchcancel', () => {
+      lastLookTouch = null;
+      lookDelta.set(0,0);
+    });
+
+    function handleFlyMovement(dt) {
       if (!flyMode) return;
-      const speed = flySpeed * deltaTime;
+      // Joystick hareketi
+      const speed = flySpeed * dt;
       const forward = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
       const right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-      if (keys.w) camera.position.addScaledVector(forward, speed);
-      if (keys.s) camera.position.addScaledVector(forward, -speed);
-      if (keys.a) camera.position.addScaledVector(right, -speed);
-      if (keys.d) camera.position.addScaledVector(right, speed);
-      if (keys.q) camera.position.y -= speed;
-      if (keys.e) camera.position.y += speed;
-    }
-
-    function applyCameraPreset(index) {
-      if (index >= 0 && index < cameraPresets.length) {
-        const preset = cameraPresets[index];
-        camera.position.copy(preset.position);
-        camera.lookAt(preset.target);
-        euler.setFromQuaternion(camera.quaternion);
+      if (joystickVector.length() > 0.1) {
+        camera.position.addScaledVector(forward, joystickVector.y * speed);
+        camera.position.addScaledVector(right, joystickVector.x * speed);
       }
+      // Bakış hareketi
+      if (lookDelta.length() > 0) {
+        euler.setFromQuaternion(camera.quaternion);
+        euler.y -= lookDelta.x * 0.003;
+        euler.x -= lookDelta.y * 0.003;
+        euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
+        camera.quaternion.setFromEuler(euler);
+        lookDelta.set(0,0);
+      }
+      // Koordinat göstergesini güncelle
+      const pos = camera.position;
+      coordDisplay.textContent = `X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
     }
 
     // ==================== MODEL YÜKLEME ====================
@@ -479,21 +566,24 @@
       updateUI(); tabletOverlay.classList.remove('active');
       currentCameraIndex=0; updateCameraSelection(); updateCurrentCamLabel();
       if(flyMode) setFlyMode(false);
+      droneBtn.style.display = 'none';
     }
 
     function startNight(night) {
       currentNight=night; setNightDifficulty(night); resetGameState();
       gameRunning=true; mainMenu.classList.remove('active'); gameUI.classList.add('active');
       winOverlay.classList.remove('active'); jumpscareOverlay.classList.remove('active');
+      droneBtn.style.display = 'block';
       lastTimestamp=performance.now(); updateUI(); updateAnimatronicVisibility();
     }
 
     function endNight(won) {
       gameRunning=false; gameUI.classList.remove('active'); tabletOverlay.classList.remove('active');
       tabletOpen=false; if(tabletModel) tabletModel.visible=false;
+      if(flyMode) setFlyMode(false);
+      droneBtn.style.display = 'none';
       if(won){ playerWon=true; winOverlay.classList.add('active'); }
       else { gameOver=true; triggerJumpscare(); }
-      if(flyMode) setFlyMode(false);
     }
 
     function triggerJumpscare() {
@@ -600,88 +690,71 @@
     // ==================== OLAY DİNLEYİCİLER ====================
     function setupEventListeners() {
       document.querySelectorAll('.night-btn').forEach(b=>b.addEventListener('click',()=>{ playClickSound(); startNight(parseInt(b.dataset.night)); }));
+      
       doorLeftBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver) return; doorLeftClosed=!doorLeftClosed; playClickSound(); if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; updateUI(); updateAnimatronicVisibility(); });
       doorRightBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver) return; doorRightClosed=!doorRightClosed; playClickSound(); if(rightDoorPanel) rightDoorPanel.position.y=doorRightClosed?-1.5:1.15; updateUI(); updateAnimatronicVisibility(); });
+      
       const lon=(s)=>{if(!gameRunning||gameOver)return; if(s==='left'){lightLeftOn=true;leftDoorLight.visible=true;}else{lightRightOn=true;rightDoorLight.visible=true;} updateUI();updateAnimatronicVisibility();};
       const loff=(s)=>{if(s==='left'){lightLeftOn=false;leftDoorLight.visible=false;}else{lightRightOn=false;rightDoorLight.visible=false;} updateUI();updateAnimatronicVisibility();};
+      
       lightLeftBtn.addEventListener('mousedown',()=>lon('left')); lightLeftBtn.addEventListener('mouseup',()=>loff('left')); lightLeftBtn.addEventListener('mouseleave',()=>loff('left'));
       lightLeftBtn.addEventListener('touchstart',e=>{e.preventDefault();lon('left');}); lightLeftBtn.addEventListener('touchend',e=>{e.preventDefault();loff('left');});
       lightRightBtn.addEventListener('mousedown',()=>lon('right')); lightRightBtn.addEventListener('mouseup',()=>loff('right')); lightRightBtn.addEventListener('mouseleave',()=>loff('right'));
       lightRightBtn.addEventListener('touchstart',e=>{e.preventDefault();lon('right');}); lightRightBtn.addEventListener('touchend',e=>{e.preventDefault();loff('right');});
+      
       openTabletBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver) return; tabletOpen=!tabletOpen; if(tabletOpen){ tabletOverlay.classList.add('active'); if(tabletModel) tabletModel.visible=true; updateCameraIndicators(); } else { tabletOverlay.classList.remove('active'); if(tabletModel) tabletModel.visible=false; } playClickSound(); updateUI(); updateAnimatronicVisibility(); });
       closeTabletBtn.addEventListener('click',()=>{ tabletOpen=false; tabletOverlay.classList.remove('active'); if(tabletModel) tabletModel.visible=false; playClickSound(); updateUI(); updateAnimatronicVisibility(); });
+      
       backToMenuBtn.addEventListener('click',()=>{ winOverlay.classList.remove('active'); mainMenu.classList.add('active'); gameUI.classList.remove('active'); gameRunning=false;gameOver=false;playerWon=false; resetGameState(); });
+      
+      // Uçuş modu butonu
+      droneBtn.addEventListener('click', () => {
+        if (!gameRunning || gameOver || playerWon) return;
+        setFlyMode(!flyMode);
+        playClickSound();
+      });
+
       window.addEventListener('resize',()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); });
 
-      // Uçuş modu ve presetler için klavye
-      window.addEventListener('keydown',(e)=>{
-        if(e.key.toLowerCase()==='f' && gameRunning && !gameOver && !playerWon) {
-          setFlyMode(!flyMode);
-          e.preventDefault();
-        }
-        if(flyMode) {
-          if(e.key.toLowerCase()==='w') keys.w=true;
-          if(e.key.toLowerCase()==='a') keys.a=true;
-          if(e.key.toLowerCase()==='s') keys.s=true;
-          if(e.key.toLowerCase()==='d') keys.d=true;
-          if(e.key.toLowerCase()==='q') keys.q=true;
-          if(e.key.toLowerCase()==='e') keys.e=true;
-          if(e.key>='1' && e.key<='9') {
-            const idx = parseInt(e.key)-1;
-            applyCameraPreset(idx);
-          }
-          e.preventDefault();
-        } else {
-          if(!gameRunning||gameOver||playerWon) return;
-          if(e.key.toLowerCase()==='a'){ doorLeftClosed=!doorLeftClosed; if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; playClickSound(); }
-          if(e.key.toLowerCase()==='d'){ doorRightClosed=!doorRightClosed; if(rightDoorPanel) rightDoorPanel.position.y=doorRightClosed?-1.5:1.15; playClickSound(); }
-          if(e.key.toLowerCase()==='q') lon('left');
-          if(e.key.toLowerCase()==='e') lon('right');
-          if(e.key===' '){ e.preventDefault(); openTabletBtn.click(); }
-          updateUI(); updateAnimatronicVisibility();
-        }
+      // Sadece normal oyun kontrolleri için klavye (uçuş modu hariç)
+      window.addEventListener('keydown', (e) => {
+        if (!gameRunning || gameOver || playerWon || flyMode) return;
+        if (e.key.toLowerCase() === 'a') { doorLeftClosed=!doorLeftClosed; if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; playClickSound(); }
+        if (e.key.toLowerCase() === 'd') { doorRightClosed=!doorRightClosed; if(rightDoorPanel) rightDoorPanel.position.y=doorRightClosed?-1.5:1.15; playClickSound(); }
+        if (e.key.toLowerCase() === 'q') lon('left');
+        if (e.key.toLowerCase() === 'e') lon('right');
+        if (e.key === ' ') { e.preventDefault(); openTabletBtn.click(); }
+        updateUI(); updateAnimatronicVisibility();
       });
-      window.addEventListener('keyup',(e)=>{
-        if(flyMode) {
-          if(e.key.toLowerCase()==='w') keys.w=false;
-          if(e.key.toLowerCase()==='a') keys.a=false;
-          if(e.key.toLowerCase()==='s') keys.s=false;
-          if(e.key.toLowerCase()==='d') keys.d=false;
-          if(e.key.toLowerCase()==='q') keys.q=false;
-          if(e.key.toLowerCase()==='e') keys.e=false;
-        } else {
-          if(e.key.toLowerCase()==='q') loff('left');
-          if(e.key.toLowerCase()==='e') loff('right');
-          updateUI(); updateAnimatronicVisibility();
-        }
+      window.addEventListener('keyup', (e) => {
+        if (!gameRunning || gameOver || playerWon || flyMode) return;
+        if (e.key.toLowerCase() === 'q') loff('left');
+        if (e.key.toLowerCase() === 'e') loff('right');
+        updateUI(); updateAnimatronicVisibility();
       });
-      window.addEventListener('mousedown',(e)=>{ if(flyMode){ mouseDown=true; e.preventDefault(); } });
-      window.addEventListener('mouseup',()=>{ mouseDown=false; });
-      window.addEventListener('mousemove', handleMouseMove);
-      // Mobil için uçuş modu pek uygun değil, istenirse eklenebilir.
     }
 
     // ==================== OYUN DÖNGÜSÜ ====================
     function gameLoop(ts) {
       requestAnimationFrame(gameLoop);
-      if(lastTimestamp===0) lastTimestamp=ts;
-      const dt=Math.min(0.1,(ts-lastTimestamp)/1000);
-      lastTimestamp=ts;
+      if (lastTimestamp === 0) lastTimestamp = ts;
+      const dt = Math.min(0.1, (ts - lastTimestamp) / 1000);
+      lastTimestamp = ts;
 
-      if(gameRunning && !gameOver && !playerWon) {
-        if(flyMode) {
+      if (gameRunning && !gameOver && !playerWon) {
+        if (flyMode) {
           handleFlyMovement(dt);
-          // Uçuş modunda AI ve güç tüketimi devam etsin mi? Evet, ama tablet kapalıysa yavaş.
-          updateAI(tabletOpen?dt*0.3:dt);
+          // Uçuş modunda AI ve güç normal işler
+          updateAI(dt);
           updatePowerConsumption(dt);
           updateTime(dt);
           updateUI();
         } else {
-          updateAI(tabletOpen?dt*0.3:dt);
+          updateAI(tabletOpen ? dt * 0.3 : dt);
           updatePowerConsumption(dt);
           updateTime(dt);
           updateUI();
-          if(tabletOpen) updateCameraIndicators();
+          if (tabletOpen) updateCameraIndicators();
         }
       }
       renderer.render(scene, camera);
