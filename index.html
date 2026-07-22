@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, touch-action: manipulation">
   <title>OsNaf - Five Nights at Freddy's Web</title>
   <style>
-    /* ... (stil kısmı aynı, uzun olduğu için kırpıyorum, tamamı üsttekiyle aynı) ... */
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
     * { box-sizing: border-box; }
     body {
@@ -123,9 +122,9 @@
     }
     #coordDisplay {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      color: rgba(255,255,255,0.8); font-family: monospace; font-size: 0.9em;
+      color: rgba(255,255,255,0.9); font-family: monospace; font-size: 1em;
       z-index: 36; pointer-events: none; display: none; text-shadow: 1px 1px 3px black;
-      background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 5px;
+      background: rgba(0,0,0,0.6); padding: 6px 12px; border-radius: 6px;
     }
   </style>
 </head>
@@ -271,18 +270,18 @@
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0; // Biraz daha parlak
+    renderer.toneMappingExposure = 1.0;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(0x000000, 8, 40); // Fog mesafesini artırdım
+    scene.fog = new THREE.Fog(0x000000, 8, 40);
 
     const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 60);
     camera.position.set(0, 1.7, 0.8);
     camera.lookAt(0, 1.5, -2);
 
-    // Işıklar - ortam ışığını biraz yükselttim
-    const ambientLight = new THREE.AmbientLight(0x223344, 0.7); // Daha parlak ambient
+    // Ortam ışığı - normalde düşük, uçuş modunda artacak
+    const ambientLight = new THREE.AmbientLight(0x334455, 0.4);
     scene.add(ambientLight);
     
     const overheadLight = new THREE.PointLight(0x555566, 4, 15);
@@ -298,11 +297,18 @@
     rightDoorLight.position.set(4,1.5,-2); rightDoorLight.target.position.set(4,0.5,-5);
     rightDoorLight.visible = false; scene.add(rightDoorLight); scene.add(rightDoorLight.target);
 
-    // Güçlü drone ışığı (kameraya bağlı)
-    const droneLight = new THREE.PointLight(0xffffff, 5, 25); // Gücü ve mesafeyi artırdık
-    droneLight.position.set(0, 0, 0);
-    droneLight.visible = false;
-    camera.add(droneLight);
+    // Drone ışıkları (kameraya bağlı)
+    const dronePointLight = new THREE.PointLight(0xffffff, 8, 30);
+    dronePointLight.position.set(0, 0, 0);
+    dronePointLight.visible = false;
+    camera.add(dronePointLight);
+
+    const droneSpotLight = new THREE.SpotLight(0xffffff, 20, 50, Math.PI/5, 0.2, 0.5);
+    droneSpotLight.position.set(0, 0, 0);
+    droneSpotLight.target.position.set(0, 0, -10); // ileriye bakar
+    droneSpotLight.visible = false;
+    camera.add(droneSpotLight);
+    camera.add(droneSpotLight.target);
 
     let leftDoorPanel, rightDoorPanel;
     function createSimpleDoorPanels() {
@@ -327,7 +333,13 @@
       joystickContainer.style.display = active ? 'block' : 'none';
       lookArea.style.display = active ? 'block' : 'none';
       coordDisplay.style.display = active ? 'block' : 'none';
-      droneLight.visible = active;
+      
+      dronePointLight.visible = active;
+      droneSpotLight.visible = active;
+      
+      // Uçuş modunda ortam ışığını artır
+      ambientLight.intensity = active ? 0.9 : 0.4;
+      
       if (active) {
         euler.setFromQuaternion(camera.quaternion);
         joystickVector.set(0,0);
