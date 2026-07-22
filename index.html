@@ -131,7 +131,6 @@
 <body>
   <canvas id="gameCanvas"></canvas>
 
-  <!-- Yükleme ve Menü aynı -->
   <div id="loadingScreen">
     <h2>OsNaf Yükleniyor...</h2>
     <div class="progress-bar-container"><div id="progressFill" class="progress-bar-fill" style="width:0%"></div></div>
@@ -194,7 +193,7 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    // DOM (aynı)
+    // ==================== DOM ====================
     const loadingScreen = document.getElementById('loadingScreen');
     const progressFill = document.getElementById('progressFill');
     const progressText = document.getElementById('progressText');
@@ -222,7 +221,7 @@
     const openTabletBtn = document.getElementById('openTablet');
     const closeTabletBtn = document.getElementById('tabletClose');
 
-    // Oyun değişkenleri
+    // ==================== OYUN DEĞİŞKENLERİ ====================
     let currentNight = 1;
     let power = 100.0;
     let elapsedGameTime = 0;
@@ -232,12 +231,13 @@
     let tabletOpen = false;
     let lastTimestamp = 0;
     const NIGHT_DURATION = 360;
+    const DOOR_WAIT_TIME = 15; // 15 saniye bekleme
 
     const animatronics = {
-      freddy: { name:'Freddy', position:0, maxPos:6, difficulty:0, moveTimer:0, moveInterval:5.0, model:null, group:new THREE.Group() },
-      bonnie: { name:'Bonnie', position:0, maxPos:5, difficulty:0, moveTimer:0, moveInterval:4.0, model:null, group:new THREE.Group() },
-      chica:  { name:'Chica',  position:0, maxPos:5, difficulty:0, moveTimer:0, moveInterval:4.5, model:null, group:new THREE.Group() },
-      foxy:   { name:'Foxy',   position:0, maxPos:4, difficulty:0, moveTimer:0, moveInterval:6.0, model:null, group:new THREE.Group() }
+      freddy: { name:'Freddy', position:0, maxPos:6, difficulty:0, moveTimer:0, moveInterval:8.0, attackTimer:0, isAtDoor:false, model:null, group:new THREE.Group() },
+      bonnie: { name:'Bonnie', position:0, maxPos:5, difficulty:0, moveTimer:0, moveInterval:7.0, attackTimer:0, isAtDoor:false, model:null, group:new THREE.Group() },
+      chica:  { name:'Chica',  position:0, maxPos:5, difficulty:0, moveTimer:0, moveInterval:7.5, attackTimer:0, isAtDoor:false, model:null, group:new THREE.Group() },
+      foxy:   { name:'Foxy',   position:0, maxPos:4, difficulty:0, moveTimer:0, moveInterval:10.0, attackTimer:0, isAtDoor:false, model:null, group:new THREE.Group() }
     };
 
     const cameras = [
@@ -248,7 +248,7 @@
     ];
     let currentCameraIndex = 0;
 
-    // Three.js
+    // ==================== THREE.JS ====================
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -267,9 +267,7 @@
     scene.add(new THREE.AmbientLight(0xffffff, 1.2));
     scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
     const overheadLight = new THREE.PointLight(0xffffff, 5, 20);
-    overheadLight.position.set(0, 4, -1);
-    overheadLight.castShadow = true;
-    scene.add(overheadLight);
+    overheadLight.position.set(0, 4, -1); overheadLight.castShadow = true; scene.add(overheadLight);
     const leftDoorLight = new THREE.SpotLight(0xffeedd, 10, 15, Math.PI/6, 0.3, 1);
     leftDoorLight.position.set(-4,1.5,-2); leftDoorLight.target.position.set(-4,0.5,-5);
     leftDoorLight.visible = false; scene.add(leftDoorLight); scene.add(leftDoorLight.target);
@@ -277,64 +275,41 @@
     rightDoorLight.position.set(4,1.5,-2); rightDoorLight.target.position.set(4,0.5,-5);
     rightDoorLight.visible = false; scene.add(rightDoorLight); scene.add(rightDoorLight.target);
     const droneLight = new THREE.PointLight(0xffffff, 2, 20);
-    droneLight.position.set(0,0,0); droneLight.visible = false;
-    camera.add(droneLight);
+    droneLight.position.set(0,0,0); droneLight.visible = false; camera.add(droneLight);
 
     // Pencere blokları
-    const leftWindowBlock = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 2.2, 1.2),
-      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.3 })
-    );
-    leftWindowBlock.position.set(-1.65, 1.5, -0.55);
-    scene.add(leftWindowBlock);
-    const rightWindowBlock = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 2.2, 1.2),
-      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.3 })
-    );
-    rightWindowBlock.position.set(1.6, 1.65, -0.45);
-    scene.add(rightWindowBlock);
+    const leftWindowBlock = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.3 }));
+    leftWindowBlock.position.set(-1.65, 1.5, -0.55); scene.add(leftWindowBlock);
+    const rightWindowBlock = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.3 }));
+    rightWindowBlock.position.set(1.6, 1.65, -0.45); scene.add(rightWindowBlock);
 
-    // Pozisyonlar
     const leftDoorPos = new THREE.Vector3(-2.4, 1.0, -0.7);
     const rightDoorPos = new THREE.Vector3(2.4, 1.0, -0.7);
     const officeCenter = new THREE.Vector3(0, 1.0, -1);
 
     let leftDoorPanel, rightDoorPanel;
     function createSimpleDoorPanels() {
-      const geo = new THREE.BoxGeometry(0.15,2.3,1.0);
-      const mat = new THREE.MeshStandardMaterial({color:0x444444, metalness:0.6, roughness:0.4});
+      const geo = new THREE.BoxGeometry(0.15,2.3,1.0), mat = new THREE.MeshStandardMaterial({color:0x444444, metalness:0.6, roughness:0.4});
       leftDoorPanel = new THREE.Mesh(geo, mat); leftDoorPanel.position.set(-4,1.15,-3.5); leftDoorPanel.name='leftDoorPanel'; scene.add(leftDoorPanel);
       rightDoorPanel = new THREE.Mesh(geo, mat); rightDoorPanel.position.set(4,1.15,-3.5); rightDoorPanel.name='rightDoorPanel'; scene.add(rightDoorPanel);
     }
-
     function createFallbackModel(colorHex) {
       const group = new THREE.Group();
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 1.2, 8), new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5, metalness: 0.3 }));
       body.position.y = 0.6; body.castShadow = body.receiveShadow = true; group.add(body);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.4 }));
       head.position.y = 1.3; head.castShadow = head.receiveShadow = true; group.add(head);
-      const eyeGeo = new THREE.SphereGeometry(0.06, 4, 4);
-      const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.8 });
+      const eyeGeo = new THREE.SphereGeometry(0.06, 4, 4), eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.8 });
       const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.08, 1.35, 0.22); group.add(leftEye);
       const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.08, 1.35, 0.22); group.add(rightEye);
       return group;
     }
 
-    // Uçuş modu değişkenleri
+    // ==================== UÇUŞ MODU ====================
     let flyMode = false;
     const flySpeed = 4.0;
-    let joystickActive = false;
-    let joystickVector = new THREE.Vector2(0,0);
-    let lookDelta = new THREE.Vector2(0,0);
+    let joystickActive = false, joystickVector = new THREE.Vector2(0,0), lookDelta = new THREE.Vector2(0,0), lastLookTouch = null;
     const euler = new THREE.Euler(0,0,0,'YXZ');
-    let lastLookTouch = null;
-
-    // Normal kamera döndürme değişkenleri
-    let isPanning = false;
-    let lastPanX = 0;
-    const panSpeed = 0.004;
-    let cameraYaw = 0; // ofis kamerasının yatay açısı
-
     function setFlyMode(active) {
       flyMode = active;
       droneBtn.classList.toggle('active', active);
@@ -342,149 +317,67 @@
       lookArea.style.display = active ? 'block' : 'none';
       coordDisplay.style.display = active ? 'block' : 'none';
       droneLight.visible = active;
-      if (active) {
-        euler.setFromQuaternion(camera.quaternion);
-        joystickVector.set(0,0);
-        joystickThumb.style.transform = 'translate(-50%, -50%)';
-      } else {
-        // normal moda dönünce kamera varsayılan ofis açısına dönsün (isteğe bağlı)
-      }
+      if (active) { euler.setFromQuaternion(camera.quaternion); joystickVector.set(0,0); joystickThumb.style.transform = 'translate(-50%, -50%)'; }
     }
-
-    // Joystick olayları (aynı)
-    joystickBase.addEventListener('touchstart', (e) => {
-      e.preventDefault(); joystickActive = true; updateJoystick(e.touches[0]);
-    });
-    joystickBase.addEventListener('touchmove', (e) => {
-      e.preventDefault(); if (joystickActive) updateJoystick(e.touches[0]);
-    });
-    joystickBase.addEventListener('touchend', (e) => {
-      e.preventDefault(); joystickActive = false; joystickVector.set(0,0); joystickThumb.style.transform = 'translate(-50%, -50%)';
-    });
+    joystickBase.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; updateJoystick(e.touches[0]); });
+    joystickBase.addEventListener('touchmove', (e) => { e.preventDefault(); if (joystickActive) updateJoystick(e.touches[0]); });
+    joystickBase.addEventListener('touchend', () => { joystickActive = false; joystickVector.set(0,0); joystickThumb.style.transform = 'translate(-50%, -50%)'; });
     function updateJoystick(touch) {
       const rect = joystickBase.getBoundingClientRect();
-      const centerX = rect.left + rect.width/2, centerY = rect.top + rect.height/2;
-      const maxDist = rect.width/2 - 20;
+      const centerX = rect.left + rect.width/2, centerY = rect.top + rect.height/2, maxDist = rect.width/2 - 20;
       let dx = touch.clientX - centerX, dy = touch.clientY - centerY;
       const dist = Math.sqrt(dx*dx+dy*dy);
       if (dist > maxDist) { dx = dx/dist*maxDist; dy = dy/dist*maxDist; }
       joystickVector.set(dx/maxDist, -dy/maxDist);
       joystickThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     }
-    // Bakış alanı (uçuş modu)
-    lookArea.addEventListener('touchstart', (e) => {
-      e.preventDefault(); lastLookTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    });
+    lookArea.addEventListener('touchstart', (e) => { e.preventDefault(); lastLookTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
     lookArea.addEventListener('touchmove', (e) => {
       e.preventDefault(); if (!lastLookTouch) return;
-      const touch = e.touches[0];
-      const dx = touch.clientX - lastLookTouch.x, dy = touch.clientY - lastLookTouch.y;
-      lookDelta.set(dx, dy);
+      const touch = e.touches[0]; lookDelta.set(touch.clientX - lastLookTouch.x, touch.clientY - lastLookTouch.y);
       lastLookTouch = { x: touch.clientX, y: touch.clientY };
     });
-    lookArea.addEventListener('touchend', (e) => { e.preventDefault(); lastLookTouch = null; lookDelta.set(0,0); });
-    lookArea.addEventListener('touchcancel', () => { lastLookTouch = null; lookDelta.set(0,0); });
-
+    lookArea.addEventListener('touchend', () => { lastLookTouch = null; lookDelta.set(0,0); });
     function handleFlyMovement(dt) {
       if (!flyMode) return;
       const speed = flySpeed * dt;
       const forward = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
       const right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-      if (joystickVector.length() > 0.1) {
-        camera.position.addScaledVector(forward, joystickVector.y * speed);
-        camera.position.addScaledVector(right, joystickVector.x * speed);
-      }
+      if (joystickVector.length() > 0.1) { camera.position.addScaledVector(forward, joystickVector.y * speed); camera.position.addScaledVector(right, joystickVector.x * speed); }
       if (lookDelta.length() > 0) {
-        euler.setFromQuaternion(camera.quaternion);
-        euler.y -= lookDelta.x * 0.003;
-        euler.x -= lookDelta.y * 0.003;
-        euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
-        camera.quaternion.setFromEuler(euler);
-        lookDelta.set(0,0);
+        euler.setFromQuaternion(camera.quaternion); euler.y -= lookDelta.x * 0.003; euler.x -= lookDelta.y * 0.003;
+        euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x)); camera.quaternion.setFromEuler(euler); lookDelta.set(0,0);
       }
       coordDisplay.textContent = `X: ${camera.position.x.toFixed(1)} Y: ${camera.position.y.toFixed(1)} Z: ${camera.position.z.toFixed(1)}`;
     }
 
-    // Normal kamera döndürme (pan)
+    // Normal kamera döndürme
+    let isPanning = false, lastPanX = 0, cameraYaw = 0;
     function setupPanControls() {
       const canvas = document.getElementById('gameCanvas');
-      canvas.addEventListener('mousedown', (e) => {
-        if (!gameRunning || gameOver || playerWon || flyMode) return;
-        // butonlara tıklamayı engellememek için sadece üst bölgede başlasın
-        if (e.clientY < window.innerHeight * 0.7) {
-          isPanning = true;
-          lastPanX = e.clientX;
-          e.preventDefault();
-        }
-      });
-      canvas.addEventListener('mousemove', (e) => {
-        if (!isPanning) return;
-        const dx = e.clientX - lastPanX;
-        lastPanX = e.clientX;
-        cameraYaw -= dx * panSpeed;
-        // Ofis kamerası: yatayda sınırlı dönsün (-45 derece +45 derece)
-        cameraYaw = Math.max(-0.8, Math.min(0.8, cameraYaw));
-        updateOfficeCameraRotation();
-        e.preventDefault();
-      });
-      canvas.addEventListener('mouseup', () => { isPanning = false; });
-      canvas.addEventListener('mouseleave', () => { isPanning = false; });
-
-      // Mobil dokunmatik
-      canvas.addEventListener('touchstart', (e) => {
-        if (!gameRunning || gameOver || playerWon || flyMode) return;
-        if (e.touches.length === 1 && e.touches[0].clientY < window.innerHeight * 0.7) {
-          isPanning = true;
-          lastPanX = e.touches[0].clientX;
-        }
-      }, { passive: false });
-      canvas.addEventListener('touchmove', (e) => {
-        if (!isPanning || e.touches.length !== 1) return;
-        const dx = e.touches[0].clientX - lastPanX;
-        lastPanX = e.touches[0].clientX;
-        cameraYaw -= dx * panSpeed;
-        cameraYaw = Math.max(-0.8, Math.min(0.8, cameraYaw));
-        updateOfficeCameraRotation();
-        e.preventDefault();
-      }, { passive: false });
-      canvas.addEventListener('touchend', () => { isPanning = false; });
+      canvas.addEventListener('mousedown', (e) => { if(gameRunning&&!gameOver&&!playerWon&&!flyMode&&e.clientY<window.innerHeight*0.7){ isPanning=true; lastPanX=e.clientX; e.preventDefault(); } });
+      canvas.addEventListener('mousemove', (e) => { if(!isPanning) return; cameraYaw-=(e.clientX-lastPanX)*0.004; cameraYaw=Math.max(-0.8,Math.min(0.8,cameraYaw)); lastPanX=e.clientX; updateOfficeCameraRotation(); e.preventDefault(); });
+      canvas.addEventListener('mouseup', ()=> isPanning=false);
+      canvas.addEventListener('touchstart', (e) => { if(gameRunning&&!gameOver&&!playerWon&&!flyMode&&e.touches.length===1&&e.touches[0].clientY<window.innerHeight*0.7){ isPanning=true; lastPanX=e.touches[0].clientX; } }, {passive:false});
+      canvas.addEventListener('touchmove', (e) => { if(!isPanning||e.touches.length!==1) return; cameraYaw-=(e.touches[0].clientX-lastPanX)*0.004; cameraYaw=Math.max(-0.8,Math.min(0.8,cameraYaw)); lastPanX=e.touches[0].clientX; updateOfficeCameraRotation(); e.preventDefault(); }, {passive:false});
+      canvas.addEventListener('touchend', ()=> isPanning=false);
     }
+    function updateOfficeCameraRotation() { camera.lookAt(new THREE.Vector3(Math.sin(cameraYaw)*3, 1.5, -2-Math.cos(cameraYaw)*3)); }
 
-    function updateOfficeCameraRotation() {
-      // Ofis kamerası: pozisyonu sabit, sadece bakış noktasını yatayda kaydır
-      const target = new THREE.Vector3(0, 1.5, -2);
-      // cameraYaw açısı kadar sağa/sola döndür
-      const lookTarget = new THREE.Vector3(
-        Math.sin(cameraYaw) * 3,
-        1.5,
-        -2 - Math.cos(cameraYaw) * 3
-      );
-      camera.lookAt(lookTarget);
-    }
-
-    // Model yükleme
+    // ==================== MODEL YÜKLEME ====================
     const loader = new GLTFLoader();
     const modelsToLoad = [
-      { key:'map', path:'models/fnaf_map.glb', type:'map' },
-      { key:'freddy', path:'models/freddy-fnaf.glb', type:'animatronic', color:0x8B4513 },
-      { key:'bonnie', path:'models/bonnie-fnaf.glb', type:'animatronic', color:0x800080 },
-      { key:'chica', path:'models/chica-fnaf.glb', type:'animatronic', color:0xFFD700 },
-      { key:'foxy', path:'models/foxy-fnaf.glb', type:'animatronic', color:0xFF0000 },
-      { key:'tablet', path:'models/tablet_animation.glb', type:'tablet' }
+      { key:'map', path:'models/fnaf_map.glb', type:'map' }, { key:'freddy', path:'models/freddy-fnaf.glb', type:'animatronic', color:0x8B4513 },
+      { key:'bonnie', path:'models/bonnie-fnaf.glb', type:'animatronic', color:0x800080 }, { key:'chica', path:'models/chica-fnaf.glb', type:'animatronic', color:0xFFD700 },
+      { key:'foxy', path:'models/foxy-fnaf.glb', type:'animatronic', color:0xFF0000 }, { key:'tablet', path:'models/tablet_animation.glb', type:'tablet' }
     ];
-    let mapModel = null, tabletModel = null;
-    const totalModels = modelsToLoad.length;
-    let loadedModels = 0;
-
-    function updateLoadingProgress(progress) {
-      const p = Math.min(100, Math.floor(progress*100));
-      progressFill.style.width = p+'%'; progressText.textContent = '%'+p;
-    }
+    let mapModel=null, tabletModel=null, loadedModels=0;
+    function updateLoadingProgress(p) { const pct=Math.min(100,Math.floor(p*100)); progressFill.style.width=pct+'%'; progressText.textContent='%'+pct; }
     function loadModel(entry) {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         loader.load(entry.path,
-          (gltf) => resolve({key:entry.key, model:gltf.scene, type:entry.type}),
-          (xhr) => { if (xhr.total>0) updateLoadingProgress((loadedModels + xhr.loaded/xhr.total)/totalModels); },
+          gltf => resolve({key:entry.key, model:gltf.scene, type:entry.type}),
+          xhr => { if(xhr.total>0) updateLoadingProgress((loadedModels + xhr.loaded/xhr.total)/modelsToLoad.length); },
           () => resolve({key:entry.key, model:null, type:entry.type, error:true})
         );
       });
@@ -492,57 +385,22 @@
     async function loadAllModels() {
       const results = await Promise.all(modelsToLoad.map(loadModel));
       results.forEach(res => {
-        if (res.error || !res.model) {
-          if (res.type==='animatronic') {
-            const entry = modelsToLoad.find(m=>m.key===res.key);
-            if (entry && animatronics[res.key]) {
-              const fallback = createFallbackModel(entry.color||0xff0000);
-              animatronics[res.key].model = fallback;
-              animatronics[res.key].group.add(fallback);
-              scene.add(animatronics[res.key].group);
-              animatronics[res.key].group.visible = false;
-            }
-          }
-          return;
-        }
-        if (res.type==='map') {
-          mapModel = res.model;
-          mapModel.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;}});
-          scene.add(mapModel);
-          mapModel.traverse(n=>{
-            if (n.name.includes('LeftDoor')||n.name.includes('left_door')) leftDoorPanel = n;
-            if (n.name.includes('RightDoor')||n.name.includes('right_door')) rightDoorPanel = n;
-          });
-        } else if (res.type==='animatronic') {
-          const a = animatronics[res.key];
-          if (a) {
-            a.model = res.model;
-            a.model.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;}});
-            a.group.add(a.model);
-            scene.add(a.group);
-            a.group.visible = false;
-          }
-        } else if (res.type==='tablet') {
-          tabletModel = res.model;
-          tabletModel.visible = false;
-          tabletModel.position.set(0.2,1.2,-0.8);
-          scene.add(tabletModel);
-        }
+        if(res.error||!res.model) { if(res.type==='animatronic'){ const e=modelsToLoad.find(m=>m.key===res.key); if(e&&animatronics[res.key]){ const fb=createFallbackModel(e.color||0xff0000); animatronics[res.key].model=fb; animatronics[res.key].group.add(fb); scene.add(animatronics[res.key].group); animatronics[res.key].group.visible=false; } } return; }
+        if(res.type==='map') { mapModel=res.model; mapModel.traverse(n=>{if(n.isMesh){n.castShadow=n.receiveShadow=true;}}); scene.add(mapModel); mapModel.traverse(n=>{ if(n.name.includes('LeftDoor')||n.name.includes('left_door')) leftDoorPanel=n; if(n.name.includes('RightDoor')||n.name.includes('right_door')) rightDoorPanel=n; }); }
+        else if(res.type==='animatronic') { const a=animatronics[res.key]; if(a){ a.model=res.model; a.model.traverse(n=>{if(n.isMesh){n.castShadow=n.receiveShadow=true;}}); a.group.add(a.model); scene.add(a.group); a.group.visible=false; } }
+        else if(res.type==='tablet') { tabletModel=res.model; tabletModel.visible=false; tabletModel.position.set(0.2,1.2,-0.8); scene.add(tabletModel); }
       });
-      if (!leftDoorPanel || !rightDoorPanel) createSimpleDoorPanels();
-      updateLoadingProgress(1);
-      setTimeout(()=>{ loadingScreen.style.display='none'; mainMenu.classList.add('active'); }, 500);
+      if(!leftDoorPanel||!rightDoorPanel) createSimpleDoorPanels();
+      updateLoadingProgress(1); setTimeout(()=>{ loadingScreen.style.display='none'; mainMenu.classList.add('active'); },500);
     }
 
-    // Tablet arayüzü
+    // ==================== TABLET ====================
     function buildCameraGrid() {
       cameraGrid.innerHTML = '';
       cameras.forEach((cam,i)=>{
-        const cell = document.createElement('div');
-        cell.className = 'cam-cell'; cell.textContent = cam.label; cell.dataset.index = i;
-        if (i===currentCameraIndex) cell.classList.add('selected');
-        const ind = document.createElement('div'); ind.className='anim-indicator'; ind.id='indicator-'+cam.id;
-        cell.appendChild(ind);
+        const cell = document.createElement('div'); cell.className='cam-cell'; cell.textContent=cam.label; cell.dataset.index=i;
+        if(i===currentCameraIndex) cell.classList.add('selected');
+        const ind = document.createElement('div'); ind.className='anim-indicator'; ind.id='indicator-'+cam.id; cell.appendChild(ind);
         cell.addEventListener('click',()=>{ currentCameraIndex=i; updateCameraSelection(); updateCurrentCamLabel(); });
         cameraGrid.appendChild(cell);
       });
@@ -551,57 +409,47 @@
     function updateCameraSelection() { cameraGrid.querySelectorAll('.cam-cell').forEach((c,i)=>c.classList.toggle('selected',i===currentCameraIndex)); }
     function updateCurrentCamLabel() { currentCamLabel.textContent = cameras[currentCameraIndex].label; }
     function updateCameraIndicators() {
-      const posToCam = {
-        freddy:['1A','1B','7','6','4A','4B','rightDoor'],
-        bonnie:['1A','1B','2A','2B','3','leftDoor'],
-        chica:['1A','1B','4A','4B','6','rightDoor'],
-        foxy:['1C','2A','2B','leftDoor','leftDoor']
-      };
+      const posToCam = { freddy:['1A','1B','7','6','4A','4B','rightDoor'], bonnie:['1A','1B','2A','2B','3','leftDoor'], chica:['1A','1B','4A','4B','6','rightDoor'], foxy:['1C','2A','2B','leftDoor','leftDoor'] };
       const pres = {}; cameras.forEach(c=>pres[c.id]=[]);
-      Object.keys(animatronics).forEach(key=>{
-        const a=animatronics[key]; const list=posToCam[key];
-        if(a.position<list.length){ const cid=list[a.position]; if(cid&&pres[cid]) pres[cid].push(key); }
-      });
-      cameras.forEach(c=>{
-        const ind=document.getElementById('indicator-'+c.id);
-        if(ind) ind.classList.toggle('visible', pres[c.id]?.length>0);
-      });
+      Object.keys(animatronics).forEach(key=>{ const a=animatronics[key]; const list=posToCam[key]; if(a.position<list.length){ const cid=list[a.position]; if(cid&&pres[cid]) pres[cid].push(key); } });
+      cameras.forEach(c=>{ const ind=document.getElementById('indicator-'+c.id); if(ind) ind.classList.toggle('visible', pres[c.id]?.length>0); });
     }
 
-    // Oyun mekanikleri
+    // ==================== OYUN MEKANİKLERİ ====================
     function setNightDifficulty(night) {
       const diffMap = { 1:{freddy:0,bonnie:1,chica:1,foxy:0}, 2:{freddy:1,bonnie:2,chica:2,foxy:1}, 3:{freddy:2,bonnie:3,chica:3,foxy:2}, 4:{freddy:3,bonnie:4,chica:4,foxy:3}, 5:{freddy:4,bonnie:5,chica:5,foxy:4} };
-      const d = diffMap[night]||diffMap[1];
+      const d=diffMap[night]||diffMap[1];
       animatronics.freddy.difficulty=d.freddy; animatronics.bonnie.difficulty=d.bonnie;
       animatronics.chica.difficulty=d.chica; animatronics.foxy.difficulty=d.foxy;
-      animatronics.freddy.moveInterval=Math.max(1.8,4.5-d.freddy*0.6);
-      animatronics.bonnie.moveInterval=Math.max(1.5,3.8-d.bonnie*0.5);
-      animatronics.chica.moveInterval=Math.max(1.6,4.0-d.chica*0.5);
-      animatronics.foxy.moveInterval=Math.max(2.0,5.5-d.foxy*0.7);
+      // Hareket aralıkları saniye cinsinden, difficulty ile azalır (max zorlukta daha sık hareket)
+      animatronics.freddy.moveInterval = Math.max(5.0, 12.0 - d.freddy * 1.2);
+      animatronics.bonnie.moveInterval = Math.max(5.0, 10.0 - d.bonnie * 1.0);
+      animatronics.chica.moveInterval = Math.max(5.0, 11.0 - d.chica * 1.0);
+      animatronics.foxy.moveInterval = Math.max(6.0, 14.0 - d.foxy * 1.5);
     }
 
     function resetGameState() {
       power=100; elapsedGameTime=0;
       doorLeftClosed=doorRightClosed=lightLeftOn=lightRightOn=tabletOpen=false;
       gameOver=playerWon=false;
-      Object.values(animatronics).forEach(a=>{a.position=0;a.moveTimer=0;a.group.visible=false;});
+      Object.values(animatronics).forEach(a=>{a.position=0; a.moveTimer=0; a.attackTimer=0; a.isAtDoor=false; a.group.visible=false;});
       if(leftDoorPanel) leftDoorPanel.position.y=1.15;
       if(rightDoorPanel) rightDoorPanel.position.y=1.15;
       leftDoorLight.visible=rightDoorLight.visible=false;
       if(tabletModel) tabletModel.visible=false;
-      leftWindowBlock.visible = rightWindowBlock.visible = true;
+      leftWindowBlock.visible=rightWindowBlock.visible=true;
       updateUI(); tabletOverlay.classList.remove('active');
       currentCameraIndex=0; updateCameraSelection(); updateCurrentCamLabel();
       if(flyMode) setFlyMode(false);
-      droneBtn.style.display = 'none';
-      cameraYaw = 0; updateOfficeCameraRotation();
+      droneBtn.style.display='none';
+      cameraYaw=0; updateOfficeCameraRotation();
     }
 
     function startNight(night) {
       currentNight=night; setNightDifficulty(night); resetGameState();
       gameRunning=true; mainMenu.classList.remove('active'); gameUI.classList.add('active');
       winOverlay.classList.remove('active'); jumpscareOverlay.classList.remove('active');
-      droneBtn.style.display = 'block';
+      droneBtn.style.display='block';
       lastTimestamp=performance.now(); updateUI(); updateAnimatronicVisibility();
     }
 
@@ -609,7 +457,7 @@
       gameRunning=false; gameUI.classList.remove('active'); tabletOverlay.classList.remove('active');
       tabletOpen=false; if(tabletModel) tabletModel.visible=false;
       if(flyMode) setFlyMode(false);
-      droneBtn.style.display = 'none';
+      droneBtn.style.display='none';
       if(won){ playerWon=true; winOverlay.classList.add('active'); }
       else { gameOver=true; triggerJumpscare(); }
     }
@@ -624,7 +472,7 @@
       ctx.fillStyle='#f00'; ctx.beginPath(); ctx.ellipse(200,260,50,30,0,0,Math.PI*2); ctx.fill();
       ctx.fillStyle='#000'; for(let i=0;i<8;i++) ctx.fillRect(170+i*8,250,5,25);
       playJumpscareSound();
-      setTimeout(()=>{ jumpscareOverlay.classList.remove('active'); mainMenu.classList.add('active'); gameUI.classList.remove('active'); }, 3500);
+      setTimeout(()=>{ jumpscareOverlay.classList.remove('active'); mainMenu.classList.add('active'); gameUI.classList.remove('active'); },3500);
     }
 
     function playJumpscareSound() {
@@ -643,64 +491,84 @@
       doorRightBtn.textContent=doorRightClosed?'🚪 KAPALI':'🚪 AÇIK'; doorRightBtn.classList.toggle('door-closed',doorRightClosed);
       lightLeftBtn.classList.toggle('light-on',lightLeftOn); lightRightBtn.classList.toggle('light-on',lightRightOn);
       openTabletBtn.classList.toggle('pressed',tabletOpen);
-      leftWindowBlock.visible = !lightLeftOn;
-      rightWindowBlock.visible = !lightRightOn;
+      leftWindowBlock.visible=!lightLeftOn; rightWindowBlock.visible=!lightRightOn;
     }
 
     function updateAnimatronicVisibility() {
-      const l=leftDoorPos, r=rightDoorPos, c=officeCenter;
-      animatronics.bonnie.group.visible=(animatronics.bonnie.position===5&&!doorLeftClosed);
-      if(animatronics.bonnie.group.visible) animatronics.bonnie.group.position.copy(l);
-      animatronics.chica.group.visible=(animatronics.chica.position===5&&!doorRightClosed);
-      if(animatronics.chica.group.visible) animatronics.chica.group.position.copy(r);
-      animatronics.freddy.group.visible=(animatronics.freddy.position===6&&!doorRightClosed);
-      if(animatronics.freddy.group.visible) animatronics.freddy.group.position.copy(r);
-      animatronics.foxy.group.visible=(animatronics.foxy.position>=3&&animatronics.foxy.position<=4);
-      if(animatronics.foxy.position===3&&!doorLeftClosed) animatronics.foxy.group.position.copy(l);
-      else if(animatronics.foxy.position===4){
-        animatronics.foxy.group.position.copy(c);
+      animatronics.bonnie.group.visible = (animatronics.bonnie.isAtDoor && !doorLeftClosed);
+      if(animatronics.bonnie.group.visible) animatronics.bonnie.group.position.copy(leftDoorPos);
+      animatronics.chica.group.visible = (animatronics.chica.isAtDoor && !doorRightClosed);
+      if(animatronics.chica.group.visible) animatronics.chica.group.position.copy(rightDoorPos);
+      animatronics.freddy.group.visible = (animatronics.freddy.isAtDoor && !doorRightClosed);
+      if(animatronics.freddy.group.visible) animatronics.freddy.group.position.copy(rightDoorPos);
+      animatronics.foxy.group.visible = (animatronics.foxy.isAtDoor && !doorLeftClosed) || animatronics.foxy.position===4;
+      if(animatronics.foxy.position===3 && !doorLeftClosed) animatronics.foxy.group.position.copy(leftDoorPos);
+      else if(animatronics.foxy.position===4) {
+        animatronics.foxy.group.position.copy(officeCenter);
         if(gameRunning && !flyMode && !doorLeftClosed) endNight(false);
       }
-      if(doorLeftClosed){ if(animatronics.bonnie.position===5) animatronics.bonnie.group.visible=false; if(animatronics.foxy.position===3) animatronics.foxy.group.visible=false; }
-      if(doorRightClosed){ if(animatronics.chica.position===5) animatronics.chica.group.visible=false; if(animatronics.freddy.position===6) animatronics.freddy.group.visible=false; }
+      if(doorLeftClosed){ animatronics.bonnie.group.visible=false; if(animatronics.foxy.position===3) animatronics.foxy.group.visible=false; }
+      if(doorRightClosed){ animatronics.chica.group.visible=false; animatronics.freddy.group.visible=false; }
     }
 
     function moveAnimatronic(key) {
       if(flyMode) return;
-      const a=animatronics[key]; if(a.position>=a.maxPos) return;
-      if(Math.random()<(0.35+a.difficulty*0.1)){
+      const a = animatronics[key];
+      if(a.position >= a.maxPos) return;
+      const moveChance = 0.2 + a.difficulty * 0.08; // daha düşük hareket şansı
+      if(Math.random() < moveChance) {
         a.position++;
-        // Foxy özel kontrol
+        // Kapıya ulaştı mı?
+        const isDoorPos = (key==='bonnie' && a.position===5) || (key==='chica' && a.position===5) || (key==='freddy' && a.position===6) || (key==='foxy' && a.position===3);
+        if(isDoorPos) {
+          a.isAtDoor = true;
+          a.attackTimer = 0; // bekleme sayacını sıfırla
+        }
+        // Foxy ofise daldıysa
         if(key==='foxy' && a.position===4) {
           updateAnimatronicVisibility();
-          if(!doorLeftClosed && gameRunning && !flyMode) endNight(false);
+          if(gameRunning && !flyMode && !doorLeftClosed) endNight(false);
           return;
         }
-        // Kapıya ulaşanlar için bekleme ve saldırı
-        if((key==='bonnie' && a.position===5) || (key==='chica' && a.position===5) || (key==='freddy' && a.position===6)) {
-          updateAnimatronicVisibility();
-          const relevantDoor = (key==='bonnie'||key==='foxy') ? 'left' : 'right';
-          const doorClosed = relevantDoor==='left' ? doorLeftClosed : doorRightClosed;
-          if(!doorClosed && gameRunning && !flyMode) {
-            setTimeout(()=>{
-              if(gameRunning && !flyMode) {
-                const stillClosed = relevantDoor==='left' ? doorLeftClosed : doorRightClosed;
-                if(!stillClosed) endNight(false);
-              }
-            }, 2500+Math.random()*4000);
-          }
-        }
       }
-      updateAnimatronicVisibility(); updateCameraIndicators();
+      updateAnimatronicVisibility();
+      updateCameraIndicators();
     }
 
     function updateAI(dt) {
       if(!gameRunning||gameOver||playerWon||flyMode) return;
-      Object.keys(animatronics).forEach(k=>{
-        const a=animatronics[k]; a.moveTimer+=dt;
-        if(a.moveTimer>=a.moveInterval){ a.moveTimer=0; moveAnimatronic(k); }
+      Object.keys(animatronics).forEach(key => {
+        const a = animatronics[key];
+        if(!a.isAtDoor) {
+          // Hareket et
+          a.moveTimer += dt;
+          if(a.moveTimer >= a.moveInterval) {
+            a.moveTimer = 0;
+            moveAnimatronic(key);
+          }
+        } else {
+          // Kapıda bekliyor
+          const doorClosed = (key==='bonnie'||key==='foxy') ? doorLeftClosed : doorRightClosed;
+          if(doorClosed) {
+            // Kapı kapalıysa geri git
+            a.isAtDoor = false;
+            a.attackTimer = 0;
+            a.position = Math.max(0, a.position - 1);
+            a.moveTimer = 0;
+            console.log(`${a.name} kapı kapalı, geri gitti. Pozisyon: ${a.position}`);
+          } else {
+            // Kapı açık, saldırı sayacını işlet
+            a.attackTimer += dt;
+            if(a.attackTimer >= DOOR_WAIT_TIME) {
+              // 15 saniye doldu, saldır!
+              console.log(`${a.name} saldırıyor!`);
+              endNight(false);
+            }
+          }
+        }
       });
-      if(tabletOpen&&cameras[currentCameraIndex].id==='1C') animatronics.foxy.moveTimer-=dt*0.6;
+      if(tabletOpen && cameras[currentCameraIndex].id==='1C') animatronics.foxy.moveTimer -= dt*0.6;
+      updateAnimatronicVisibility();
     }
 
     function updatePowerConsumption(dt) {
@@ -720,7 +588,7 @@
       updateUI();
     }
 
-    // Olay dinleyiciler
+    // ==================== OLAY DİNLEYİCİLER ====================
     function setupEventListeners() {
       document.querySelectorAll('.night-btn').forEach(b=>b.addEventListener('click',()=>{ playClickSound(); startNight(parseInt(b.dataset.night)); }));
       doorLeftBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver) return; doorLeftClosed=!doorLeftClosed; playClickSound(); if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; updateUI(); updateAnimatronicVisibility(); });
@@ -736,36 +604,29 @@
       backToMenuBtn.addEventListener('click',()=>{ winOverlay.classList.remove('active'); mainMenu.classList.add('active'); gameUI.classList.remove('active'); gameRunning=false;gameOver=false;playerWon=false; resetGameState(); });
       droneBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver||playerWon) return; setFlyMode(!flyMode); playClickSound(); });
       window.addEventListener('resize',()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); });
-
-      // Klavye kontrolleri (normal mod)
       window.addEventListener('keydown',(e)=>{
         if(!gameRunning||gameOver||playerWon||flyMode) return;
         if(e.key.toLowerCase()==='a'){ doorLeftClosed=!doorLeftClosed; if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; playClickSound(); }
         if(e.key.toLowerCase()==='d'){ doorRightClosed=!doorRightClosed; if(rightDoorPanel) rightDoorPanel.position.y=doorRightClosed?-1.5:1.15; playClickSound(); }
-        if(e.key.toLowerCase()==='q') lon('left');
-        if(e.key.toLowerCase()==='e') lon('right');
-        if(e.key===' '){ e.preventDefault(); openTabletBtn.click(); }
-        updateUI(); updateAnimatronicVisibility();
+        if(e.key.toLowerCase()==='q') lon('left'); if(e.key.toLowerCase()==='e') lon('right');
+        if(e.key===' '){ e.preventDefault(); openTabletBtn.click(); } updateUI(); updateAnimatronicVisibility();
       });
       window.addEventListener('keyup',(e)=>{
         if(!gameRunning||gameOver||playerWon||flyMode) return;
-        if(e.key.toLowerCase()==='q') loff('left');
-        if(e.key.toLowerCase()==='e') loff('right');
+        if(e.key.toLowerCase()==='q') loff('left'); if(e.key.toLowerCase()==='e') loff('right');
         updateUI(); updateAnimatronicVisibility();
       });
     }
 
-    // Oyun döngüsü
+    // ==================== OYUN DÖNGÜSÜ ====================
     function gameLoop(ts) {
       requestAnimationFrame(gameLoop);
-      if (lastTimestamp===0) lastTimestamp=ts;
+      if(lastTimestamp===0) lastTimestamp=ts;
       const dt = Math.min(0.1, (ts-lastTimestamp)/1000);
       lastTimestamp=ts;
-
       if(gameRunning && !gameOver && !playerWon) {
-        if(flyMode) {
-          handleFlyMovement(dt);
-        } else {
+        if(flyMode) { handleFlyMovement(dt); }
+        else {
           updateAI(tabletOpen ? dt*0.3 : dt);
           updatePowerConsumption(dt);
           updateTime(dt);
@@ -780,7 +641,7 @@
       buildCameraGrid();
       setupEventListeners();
       resetGameState();
-      setupPanControls(); // normal kamera döndürme
+      setupPanControls();
       await loadAllModels();
       requestAnimationFrame(gameLoop);
     }
