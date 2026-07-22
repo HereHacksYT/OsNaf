@@ -131,12 +131,12 @@
 <body>
   <canvas id="gameCanvas"></canvas>
 
+  <!-- Yükleme ve Menü aynı -->
   <div id="loadingScreen">
     <h2>OsNaf Yükleniyor...</h2>
     <div class="progress-bar-container"><div id="progressFill" class="progress-bar-fill" style="width:0%"></div></div>
     <p id="progressText" class="progress-text">%0</p>
   </div>
-
   <div id="mainMenu">
     <h1>OsNaf</h1>
     <p class="subtitle">Beş Gece. Hayatta Kal.</p>
@@ -148,7 +148,6 @@
       <button class="night-btn" data-night="5">Gece 5</button>
     </div>
   </div>
-
   <div id="gameUI">
     <div id="topBar">
       <span>Güç: <span id="powerValue" class="power-indicator">100.0%</span></span>
@@ -166,47 +165,36 @@
       </div>
     </div>
   </div>
-
   <div id="tabletOverlay">
     <div id="tabletHeader">GÜVENLİK KAMERALARI - <span id="currentCamLabel">Kamera 1A</span></div>
     <div id="cameraGrid"></div>
     <button id="tabletClose">TABLETİ KAPAT</button>
   </div>
-
   <div id="jumpscareOverlay">
     <canvas id="jumpscareCanvas" width="400" height="400"></canvas>
     <div class="gameover-text">GAME OVER</div>
   </div>
-
   <div id="winOverlay">
     <h2>5:59 AM</h2>
     <p style="font-size:1.5em;">Hayatta Kaldın!</p>
     <button id="backToMenu">Menüye Dön</button>
   </div>
-
   <button id="droneBtn">🚁 UÇUŞ</button>
   <div id="joystickContainer">
-    <div id="joystickBase">
-      <div id="joystickThumb"></div>
-    </div>
+    <div id="joystickBase"><div id="joystickThumb"></div></div>
   </div>
   <div id="lookArea"></div>
   <div id="coordDisplay">X: 0.0 Y: 0.0 Z: 0.0</div>
 
   <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"
-      }
-    }
+    { "imports": { "three": "https://unpkg.com/three@0.152.2/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/" } }
   </script>
 
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    // ==================== DOM ====================
+    // DOM (aynı)
     const loadingScreen = document.getElementById('loadingScreen');
     const progressFill = document.getElementById('progressFill');
     const progressText = document.getElementById('progressText');
@@ -227,7 +215,6 @@
     const joystickThumb = document.getElementById('joystickThumb');
     const lookArea = document.getElementById('lookArea');
     const coordDisplay = document.getElementById('coordDisplay');
-
     const doorLeftBtn = document.getElementById('doorLeft');
     const doorRightBtn = document.getElementById('doorRight');
     const lightLeftBtn = document.getElementById('lightLeft');
@@ -235,7 +222,7 @@
     const openTabletBtn = document.getElementById('openTablet');
     const closeTabletBtn = document.getElementById('tabletClose');
 
-    // ==================== OYUN DEĞİŞKENLERİ ====================
+    // Oyun değişkenleri
     let currentNight = 1;
     let power = 100.0;
     let elapsedGameTime = 0;
@@ -254,16 +241,14 @@
     };
 
     const cameras = [
-      { id:'1A', label:'Sahne (1A)', row:0, col:0 }, { id:'1B', label:'Yemek Alanı (1B)', row:0, col:1 },
-      { id:'1C', label:'Korsan Koyu (1C)', row:0, col:2 }, { id:'2A', label:'Batı Koridor (2A)', row:1, col:0 },
-      { id:'2B', label:'Batı Salon (2B)', row:1, col:1 }, { id:'3', label:'Depo (3)', row:1, col:2 },
-      { id:'4A', label:'Doğu Koridor (4A)', row:2, col:0 }, { id:'4B', label:'Doğu Salon (4B)', row:2, col:1 },
-      { id:'5', label:'Arka Oda (5)', row:2, col:2 }, { id:'6', label:'Mutfak (6)', row:3, col:0 },
-      { id:'7', label:'Tuvaletler (7)', row:3, col:1 }
+      { id:'1A', label:'Sahne (1A)' }, { id:'1B', label:'Yemek Alanı (1B)' }, { id:'1C', label:'Korsan Koyu (1C)' },
+      { id:'2A', label:'Batı Koridor (2A)' }, { id:'2B', label:'Batı Salon (2B)' }, { id:'3', label:'Depo (3)' },
+      { id:'4A', label:'Doğu Koridor (4A)' }, { id:'4B', label:'Doğu Salon (4B)' }, { id:'5', label:'Arka Oda (5)' },
+      { id:'6', label:'Mutfak (6)' }, { id:'7', label:'Tuvaletler (7)' }
     ];
     let currentCameraIndex = 0;
 
-    // ==================== THREE.JS ====================
+    // Three.js
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -271,46 +256,37 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.5;
-
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
     scene.fog = new THREE.Fog(0x222222, 15, 50);
-
     const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 60);
     camera.position.set(0, 1.7, 0.8);
     camera.lookAt(0, 1.5, -2);
 
-    // Aydınlık ışıklar
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-    scene.add(ambientLight);
-    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
-    scene.add(hemisphereLight);
+    // Işıklar
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
     const overheadLight = new THREE.PointLight(0xffffff, 5, 20);
     overheadLight.position.set(0, 4, -1);
     overheadLight.castShadow = true;
     scene.add(overheadLight);
-
     const leftDoorLight = new THREE.SpotLight(0xffeedd, 10, 15, Math.PI/6, 0.3, 1);
     leftDoorLight.position.set(-4,1.5,-2); leftDoorLight.target.position.set(-4,0.5,-5);
     leftDoorLight.visible = false; scene.add(leftDoorLight); scene.add(leftDoorLight.target);
-
     const rightDoorLight = new THREE.SpotLight(0xffeedd, 10, 15, Math.PI/6, 0.3, 1);
     rightDoorLight.position.set(4,1.5,-2); rightDoorLight.target.position.set(4,0.5,-5);
     rightDoorLight.visible = false; scene.add(rightDoorLight); scene.add(rightDoorLight.target);
-
     const droneLight = new THREE.PointLight(0xffffff, 2, 20);
-    droneLight.position.set(0,0,0);
-    droneLight.visible = false;
+    droneLight.position.set(0,0,0); droneLight.visible = false;
     camera.add(droneLight);
 
-    // 🪟 Kalın Pencere Blokları (Z ekseni kalınlaştırılmış)
+    // Pencere blokları
     const leftWindowBlock = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 2.2, 1.2), // genişlik, yükseklik, derinlik (Z kalın)
+      new THREE.BoxGeometry(0.3, 2.2, 1.2),
       new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.3 })
     );
     leftWindowBlock.position.set(-1.65, 1.5, -0.55);
     scene.add(leftWindowBlock);
-
     const rightWindowBlock = new THREE.Mesh(
       new THREE.BoxGeometry(0.3, 2.2, 1.2),
       new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.3 })
@@ -318,7 +294,7 @@
     rightWindowBlock.position.set(1.6, 1.65, -0.45);
     scene.add(rightWindowBlock);
 
-    // Robot pozisyonları (Y yükseltildi)
+    // Pozisyonlar
     const leftDoorPos = new THREE.Vector3(-2.4, 1.0, -0.7);
     const rightDoorPos = new THREE.Vector3(2.4, 1.0, -0.7);
     const officeCenter = new THREE.Vector3(0, 1.0, -1);
@@ -331,39 +307,20 @@
       rightDoorPanel = new THREE.Mesh(geo, mat); rightDoorPanel.position.set(4,1.15,-3.5); rightDoorPanel.name='rightDoorPanel'; scene.add(rightDoorPanel);
     }
 
-    // Yedek robot modeli oluştur
     function createFallbackModel(colorHex) {
       const group = new THREE.Group();
-      const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3, 0.35, 1.2, 8),
-        new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5, metalness: 0.3 })
-      );
-      body.position.y = 0.6;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      group.add(body);
-
-      const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.25, 8, 8),
-        new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.4 })
-      );
-      head.position.y = 1.3;
-      head.castShadow = true;
-      head.receiveShadow = true;
-      group.add(head);
-
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 1.2, 8), new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5, metalness: 0.3 }));
+      body.position.y = 0.6; body.castShadow = body.receiveShadow = true; group.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.4 }));
+      head.position.y = 1.3; head.castShadow = head.receiveShadow = true; group.add(head);
       const eyeGeo = new THREE.SphereGeometry(0.06, 4, 4);
       const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.8 });
-      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-      leftEye.position.set(-0.08, 1.35, 0.22);
-      group.add(leftEye);
-      const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-      rightEye.position.set(0.08, 1.35, 0.22);
-      group.add(rightEye);
+      const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.08, 1.35, 0.22); group.add(leftEye);
+      const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.08, 1.35, 0.22); group.add(rightEye);
       return group;
     }
 
-    // ==================== UÇUŞ MODU (JOYSTICK) ====================
+    // Uçuş modu değişkenleri
     let flyMode = false;
     const flySpeed = 4.0;
     let joystickActive = false;
@@ -371,6 +328,12 @@
     let lookDelta = new THREE.Vector2(0,0);
     const euler = new THREE.Euler(0,0,0,'YXZ');
     let lastLookTouch = null;
+
+    // Normal kamera döndürme değişkenleri
+    let isPanning = false;
+    let lastPanX = 0;
+    const panSpeed = 0.004;
+    let cameraYaw = 0; // ofis kamerasının yatay açısı
 
     function setFlyMode(active) {
       flyMode = active;
@@ -383,68 +346,44 @@
         euler.setFromQuaternion(camera.quaternion);
         joystickVector.set(0,0);
         joystickThumb.style.transform = 'translate(-50%, -50%)';
+      } else {
+        // normal moda dönünce kamera varsayılan ofis açısına dönsün (isteğe bağlı)
       }
     }
 
+    // Joystick olayları (aynı)
     joystickBase.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      joystickActive = true;
-      updateJoystick(e.touches[0]);
+      e.preventDefault(); joystickActive = true; updateJoystick(e.touches[0]);
     });
     joystickBase.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (joystickActive) updateJoystick(e.touches[0]);
+      e.preventDefault(); if (joystickActive) updateJoystick(e.touches[0]);
     });
     joystickBase.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      joystickActive = false;
-      joystickVector.set(0,0);
-      joystickThumb.style.transform = 'translate(-50%, -50%)';
+      e.preventDefault(); joystickActive = false; joystickVector.set(0,0); joystickThumb.style.transform = 'translate(-50%, -50%)';
     });
-    joystickBase.addEventListener('touchcancel', () => {
-      joystickActive = false;
-      joystickVector.set(0,0);
-      joystickThumb.style.transform = 'translate(-50%, -50%)';
-    });
-
     function updateJoystick(touch) {
       const rect = joystickBase.getBoundingClientRect();
-      const centerX = rect.left + rect.width/2;
-      const centerY = rect.top + rect.height/2;
+      const centerX = rect.left + rect.width/2, centerY = rect.top + rect.height/2;
       const maxDist = rect.width/2 - 20;
-      let dx = touch.clientX - centerX;
-      let dy = touch.clientY - centerY;
+      let dx = touch.clientX - centerX, dy = touch.clientY - centerY;
       const dist = Math.sqrt(dx*dx+dy*dy);
-      if (dist > maxDist) {
-        dx = dx / dist * maxDist;
-        dy = dy / dist * maxDist;
-      }
-      joystickVector.set(dx / maxDist, -dy / maxDist);
+      if (dist > maxDist) { dx = dx/dist*maxDist; dy = dy/dist*maxDist; }
+      joystickVector.set(dx/maxDist, -dy/maxDist);
       joystickThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     }
-
+    // Bakış alanı (uçuş modu)
     lookArea.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      lastLookTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      e.preventDefault(); lastLookTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     });
     lookArea.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (!lastLookTouch) return;
+      e.preventDefault(); if (!lastLookTouch) return;
       const touch = e.touches[0];
-      const dx = touch.clientX - lastLookTouch.x;
-      const dy = touch.clientY - lastLookTouch.y;
+      const dx = touch.clientX - lastLookTouch.x, dy = touch.clientY - lastLookTouch.y;
       lookDelta.set(dx, dy);
       lastLookTouch = { x: touch.clientX, y: touch.clientY };
     });
-    lookArea.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      lastLookTouch = null;
-      lookDelta.set(0,0);
-    });
-    lookArea.addEventListener('touchcancel', () => {
-      lastLookTouch = null;
-      lookDelta.set(0,0);
-    });
+    lookArea.addEventListener('touchend', (e) => { e.preventDefault(); lastLookTouch = null; lookDelta.set(0,0); });
+    lookArea.addEventListener('touchcancel', () => { lastLookTouch = null; lookDelta.set(0,0); });
 
     function handleFlyMovement(dt) {
       if (!flyMode) return;
@@ -463,18 +402,74 @@
         camera.quaternion.setFromEuler(euler);
         lookDelta.set(0,0);
       }
-      const pos = camera.position;
-      coordDisplay.textContent = `X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
+      coordDisplay.textContent = `X: ${camera.position.x.toFixed(1)} Y: ${camera.position.y.toFixed(1)} Z: ${camera.position.z.toFixed(1)}`;
     }
 
-    // ==================== MODEL YÜKLEME ====================
+    // Normal kamera döndürme (pan)
+    function setupPanControls() {
+      const canvas = document.getElementById('gameCanvas');
+      canvas.addEventListener('mousedown', (e) => {
+        if (!gameRunning || gameOver || playerWon || flyMode) return;
+        // butonlara tıklamayı engellememek için sadece üst bölgede başlasın
+        if (e.clientY < window.innerHeight * 0.7) {
+          isPanning = true;
+          lastPanX = e.clientX;
+          e.preventDefault();
+        }
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        const dx = e.clientX - lastPanX;
+        lastPanX = e.clientX;
+        cameraYaw -= dx * panSpeed;
+        // Ofis kamerası: yatayda sınırlı dönsün (-45 derece +45 derece)
+        cameraYaw = Math.max(-0.8, Math.min(0.8, cameraYaw));
+        updateOfficeCameraRotation();
+        e.preventDefault();
+      });
+      canvas.addEventListener('mouseup', () => { isPanning = false; });
+      canvas.addEventListener('mouseleave', () => { isPanning = false; });
+
+      // Mobil dokunmatik
+      canvas.addEventListener('touchstart', (e) => {
+        if (!gameRunning || gameOver || playerWon || flyMode) return;
+        if (e.touches.length === 1 && e.touches[0].clientY < window.innerHeight * 0.7) {
+          isPanning = true;
+          lastPanX = e.touches[0].clientX;
+        }
+      }, { passive: false });
+      canvas.addEventListener('touchmove', (e) => {
+        if (!isPanning || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - lastPanX;
+        lastPanX = e.touches[0].clientX;
+        cameraYaw -= dx * panSpeed;
+        cameraYaw = Math.max(-0.8, Math.min(0.8, cameraYaw));
+        updateOfficeCameraRotation();
+        e.preventDefault();
+      }, { passive: false });
+      canvas.addEventListener('touchend', () => { isPanning = false; });
+    }
+
+    function updateOfficeCameraRotation() {
+      // Ofis kamerası: pozisyonu sabit, sadece bakış noktasını yatayda kaydır
+      const target = new THREE.Vector3(0, 1.5, -2);
+      // cameraYaw açısı kadar sağa/sola döndür
+      const lookTarget = new THREE.Vector3(
+        Math.sin(cameraYaw) * 3,
+        1.5,
+        -2 - Math.cos(cameraYaw) * 3
+      );
+      camera.lookAt(lookTarget);
+    }
+
+    // Model yükleme
     const loader = new GLTFLoader();
     const modelsToLoad = [
       { key:'map', path:'models/fnaf_map.glb', type:'map' },
-      { key:'freddy', path:'models/freddy-fnaf.glb', type:'animatronic', color: 0x8B4513 },
-      { key:'bonnie', path:'models/bonnie-fnaf.glb', type:'animatronic', color: 0x800080 },
-      { key:'chica', path:'models/chica-fnaf.glb', type:'animatronic', color: 0xFFD700 },
-      { key:'foxy', path:'models/foxy-fnaf.glb', type:'animatronic', color: 0xFF0000 },
+      { key:'freddy', path:'models/freddy-fnaf.glb', type:'animatronic', color:0x8B4513 },
+      { key:'bonnie', path:'models/bonnie-fnaf.glb', type:'animatronic', color:0x800080 },
+      { key:'chica', path:'models/chica-fnaf.glb', type:'animatronic', color:0xFFD700 },
+      { key:'foxy', path:'models/foxy-fnaf.glb', type:'animatronic', color:0xFF0000 },
       { key:'tablet', path:'models/tablet_animation.glb', type:'tablet' }
     ];
     let mapModel = null, tabletModel = null;
@@ -483,39 +478,29 @@
 
     function updateLoadingProgress(progress) {
       const p = Math.min(100, Math.floor(progress*100));
-      progressFill.style.width = p+'%';
-      progressText.textContent = '%'+p;
+      progressFill.style.width = p+'%'; progressText.textContent = '%'+p;
     }
-
     function loadModel(entry) {
       return new Promise((resolve) => {
         loader.load(entry.path,
           (gltf) => resolve({key:entry.key, model:gltf.scene, type:entry.type}),
-          (xhr) => {
-            if (xhr.total>0) {
-              const mp = xhr.loaded/xhr.total;
-              updateLoadingProgress((loadedModels+mp)/totalModels);
-            }
-          },
+          (xhr) => { if (xhr.total>0) updateLoadingProgress((loadedModels + xhr.loaded/xhr.total)/totalModels); },
           () => resolve({key:entry.key, model:null, type:entry.type, error:true})
         );
       });
     }
-
     async function loadAllModels() {
       const results = await Promise.all(modelsToLoad.map(loadModel));
       results.forEach(res => {
         if (res.error || !res.model) {
-          // Model yüklenemedi, animatronic için yedek oluştur
-          if (res.type === 'animatronic') {
-            const entry = modelsToLoad.find(m => m.key === res.key);
+          if (res.type==='animatronic') {
+            const entry = modelsToLoad.find(m=>m.key===res.key);
             if (entry && animatronics[res.key]) {
-              const fallback = createFallbackModel(entry.color || 0xff0000);
+              const fallback = createFallbackModel(entry.color||0xff0000);
               animatronics[res.key].model = fallback;
               animatronics[res.key].group.add(fallback);
               scene.add(animatronics[res.key].group);
               animatronics[res.key].group.visible = false;
-              console.log(`${res.key} için yedek model oluşturuldu`);
             }
           }
           return;
@@ -546,13 +531,10 @@
       });
       if (!leftDoorPanel || !rightDoorPanel) createSimpleDoorPanels();
       updateLoadingProgress(1);
-      setTimeout(()=>{
-        loadingScreen.style.display='none';
-        mainMenu.classList.add('active');
-      },500);
+      setTimeout(()=>{ loadingScreen.style.display='none'; mainMenu.classList.add('active'); }, 500);
     }
 
-    // ==================== TABLET & UI ====================
+    // Tablet arayüzü
     function buildCameraGrid() {
       cameraGrid.innerHTML = '';
       cameras.forEach((cam,i)=>{
@@ -566,9 +548,7 @@
       });
       updateCurrentCamLabel();
     }
-    function updateCameraSelection() {
-      cameraGrid.querySelectorAll('.cam-cell').forEach((c,i)=>c.classList.toggle('selected',i===currentCameraIndex));
-    }
+    function updateCameraSelection() { cameraGrid.querySelectorAll('.cam-cell').forEach((c,i)=>c.classList.toggle('selected',i===currentCameraIndex)); }
     function updateCurrentCamLabel() { currentCamLabel.textContent = cameras[currentCameraIndex].label; }
     function updateCameraIndicators() {
       const posToCam = {
@@ -588,13 +568,9 @@
       });
     }
 
-    // ==================== OYUN MEKANİKLERİ ====================
+    // Oyun mekanikleri
     function setNightDifficulty(night) {
-      const diffMap = {
-        1:{freddy:0,bonnie:1,chica:1,foxy:0}, 2:{freddy:1,bonnie:2,chica:2,foxy:1},
-        3:{freddy:2,bonnie:3,chica:3,foxy:2}, 4:{freddy:3,bonnie:4,chica:4,foxy:3},
-        5:{freddy:4,bonnie:5,chica:5,foxy:4}
-      };
+      const diffMap = { 1:{freddy:0,bonnie:1,chica:1,foxy:0}, 2:{freddy:1,bonnie:2,chica:2,foxy:1}, 3:{freddy:2,bonnie:3,chica:3,foxy:2}, 4:{freddy:3,bonnie:4,chica:4,foxy:3}, 5:{freddy:4,bonnie:5,chica:5,foxy:4} };
       const d = diffMap[night]||diffMap[1];
       animatronics.freddy.difficulty=d.freddy; animatronics.bonnie.difficulty=d.bonnie;
       animatronics.chica.difficulty=d.chica; animatronics.foxy.difficulty=d.foxy;
@@ -613,12 +589,12 @@
       if(rightDoorPanel) rightDoorPanel.position.y=1.15;
       leftDoorLight.visible=rightDoorLight.visible=false;
       if(tabletModel) tabletModel.visible=false;
-      leftWindowBlock.visible = true;
-      rightWindowBlock.visible = true;
+      leftWindowBlock.visible = rightWindowBlock.visible = true;
       updateUI(); tabletOverlay.classList.remove('active');
       currentCameraIndex=0; updateCameraSelection(); updateCurrentCamLabel();
       if(flyMode) setFlyMode(false);
       droneBtn.style.display = 'none';
+      cameraYaw = 0; updateOfficeCameraRotation();
     }
 
     function startNight(night) {
@@ -648,30 +624,14 @@
       ctx.fillStyle='#f00'; ctx.beginPath(); ctx.ellipse(200,260,50,30,0,0,Math.PI*2); ctx.fill();
       ctx.fillStyle='#000'; for(let i=0;i<8;i++) ctx.fillRect(170+i*8,250,5,25);
       playJumpscareSound();
-      setTimeout(()=>{
-        jumpscareOverlay.classList.remove('active');
-        mainMenu.classList.add('active'); gameUI.classList.remove('active');
-      },3500);
+      setTimeout(()=>{ jumpscareOverlay.classList.remove('active'); mainMenu.classList.add('active'); gameUI.classList.remove('active'); }, 3500);
     }
 
     function playJumpscareSound() {
-      try{
-        const ac=new(window.AudioContext||window.webkitAudioContext)();
-        const buf=ac.createBuffer(1,ac.sampleRate*1.5,ac.sampleRate);
-        const d=buf.getChannelData(0);
-        for(let i=0;i<d.length;i++){const t=i/ac.sampleRate; d[i]=(Math.random()*2-1)*Math.exp(-t*3)*0.8+Math.sin(t*150*(1+t*10))*0.3*Math.exp(-t*2)+Math.sin(t*80*(1-t))*0.2*Math.exp(-t*2.5);}
-        const src=ac.createBufferSource(); src.buffer=buf; src.connect(ac.destination); src.start();
-        setTimeout(()=>ac.close(),2000);
-      }catch(e){}
+      try{ const ac=new (window.AudioContext||window.webkitAudioContext)(); const buf=ac.createBuffer(1,ac.sampleRate*1.5,ac.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<d.length;i++){ const t=i/ac.sampleRate; d[i]=(Math.random()*2-1)*Math.exp(-t*3)*0.8+Math.sin(t*150*(1+t*10))*0.3*Math.exp(-t*2)+Math.sin(t*80*(1-t))*0.2*Math.exp(-t*2.5); } const src=ac.createBufferSource(); src.buffer=buf; src.connect(ac.destination); src.start(); setTimeout(()=>ac.close(),2000); }catch(e){}
     }
     function playClickSound() {
-      try{
-        const ac=new(window.AudioContext||window.webkitAudioContext)();
-        const o=ac.createOscillator(),g=ac.createGain();
-        o.type='square'; o.frequency.value=800; g.gain.setValueAtTime(0.1,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.1);
-        o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.1);
-        setTimeout(()=>ac.close(),200);
-      }catch(e){}
+      try{ const ac=new (window.AudioContext||window.webkitAudioContext)(); const o=ac.createOscillator(),g=ac.createGain(); o.type='square'; o.frequency.value=800; g.gain.setValueAtTime(0.1,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.1); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.1); setTimeout(()=>ac.close(),200); }catch(e){}
     }
 
     function updateUI() {
@@ -697,7 +657,10 @@
       if(animatronics.freddy.group.visible) animatronics.freddy.group.position.copy(r);
       animatronics.foxy.group.visible=(animatronics.foxy.position>=3&&animatronics.foxy.position<=4);
       if(animatronics.foxy.position===3&&!doorLeftClosed) animatronics.foxy.group.position.copy(l);
-      else if(animatronics.foxy.position===4){ animatronics.foxy.group.position.copy(c); if(gameRunning&&!flyMode) endNight(false); }
+      else if(animatronics.foxy.position===4){
+        animatronics.foxy.group.position.copy(c);
+        if(gameRunning && !flyMode && !doorLeftClosed) endNight(false);
+      }
       if(doorLeftClosed){ if(animatronics.bonnie.position===5) animatronics.bonnie.group.visible=false; if(animatronics.foxy.position===3) animatronics.foxy.group.visible=false; }
       if(doorRightClosed){ if(animatronics.chica.position===5) animatronics.chica.group.visible=false; if(animatronics.freddy.position===6) animatronics.freddy.group.visible=false; }
     }
@@ -707,10 +670,25 @@
       const a=animatronics[key]; if(a.position>=a.maxPos) return;
       if(Math.random()<(0.35+a.difficulty*0.1)){
         a.position++;
-        if(key==='foxy'&&a.position===4){ updateAnimatronicVisibility(); if(!doorLeftClosed&&gameRunning) endNight(false); return; }
-        if((key==='bonnie'&&a.position===5&&!doorLeftClosed)||(key==='chica'&&a.position===5&&!doorRightClosed)||(key==='freddy'&&a.position===6&&!doorRightClosed)){
+        // Foxy özel kontrol
+        if(key==='foxy' && a.position===4) {
           updateAnimatronicVisibility();
-          if(gameRunning) setTimeout(()=>{ if(gameRunning&&((key==='bonnie'&&a.position===5&&!doorLeftClosed)||(key==='chica'&&a.position===5&&!doorRightClosed)||(key==='freddy'&&a.position===6&&!doorRightClosed))) endNight(false); },2500+Math.random()*4000);
+          if(!doorLeftClosed && gameRunning && !flyMode) endNight(false);
+          return;
+        }
+        // Kapıya ulaşanlar için bekleme ve saldırı
+        if((key==='bonnie' && a.position===5) || (key==='chica' && a.position===5) || (key==='freddy' && a.position===6)) {
+          updateAnimatronicVisibility();
+          const relevantDoor = (key==='bonnie'||key==='foxy') ? 'left' : 'right';
+          const doorClosed = relevantDoor==='left' ? doorLeftClosed : doorRightClosed;
+          if(!doorClosed && gameRunning && !flyMode) {
+            setTimeout(()=>{
+              if(gameRunning && !flyMode) {
+                const stillClosed = relevantDoor==='left' ? doorLeftClosed : doorRightClosed;
+                if(!stillClosed) endNight(false);
+              }
+            }, 2500+Math.random()*4000);
+          }
         }
       }
       updateAnimatronicVisibility(); updateCameraIndicators();
@@ -742,77 +720,67 @@
       updateUI();
     }
 
-    // ==================== OLAY DİNLEYİCİLER ====================
+    // Olay dinleyiciler
     function setupEventListeners() {
       document.querySelectorAll('.night-btn').forEach(b=>b.addEventListener('click',()=>{ playClickSound(); startNight(parseInt(b.dataset.night)); }));
-
       doorLeftBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver) return; doorLeftClosed=!doorLeftClosed; playClickSound(); if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; updateUI(); updateAnimatronicVisibility(); });
       doorRightBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver) return; doorRightClosed=!doorRightClosed; playClickSound(); if(rightDoorPanel) rightDoorPanel.position.y=doorRightClosed?-1.5:1.15; updateUI(); updateAnimatronicVisibility(); });
-
       const lon=(s)=>{if(!gameRunning||gameOver)return; if(s==='left'){lightLeftOn=true;leftDoorLight.visible=true;}else{lightRightOn=true;rightDoorLight.visible=true;} updateUI();updateAnimatronicVisibility();};
       const loff=(s)=>{if(s==='left'){lightLeftOn=false;leftDoorLight.visible=false;}else{lightRightOn=false;rightDoorLight.visible=false;} updateUI();updateAnimatronicVisibility();};
-
       lightLeftBtn.addEventListener('mousedown',()=>lon('left')); lightLeftBtn.addEventListener('mouseup',()=>loff('left')); lightLeftBtn.addEventListener('mouseleave',()=>loff('left'));
       lightLeftBtn.addEventListener('touchstart',e=>{e.preventDefault();lon('left');}); lightLeftBtn.addEventListener('touchend',e=>{e.preventDefault();loff('left');});
       lightRightBtn.addEventListener('mousedown',()=>lon('right')); lightRightBtn.addEventListener('mouseup',()=>loff('right')); lightRightBtn.addEventListener('mouseleave',()=>loff('right'));
       lightRightBtn.addEventListener('touchstart',e=>{e.preventDefault();lon('right');}); lightRightBtn.addEventListener('touchend',e=>{e.preventDefault();loff('right');});
-
       openTabletBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver) return; tabletOpen=!tabletOpen; if(tabletOpen){ tabletOverlay.classList.add('active'); if(tabletModel) tabletModel.visible=true; updateCameraIndicators(); } else { tabletOverlay.classList.remove('active'); if(tabletModel) tabletModel.visible=false; } playClickSound(); updateUI(); updateAnimatronicVisibility(); });
       closeTabletBtn.addEventListener('click',()=>{ tabletOpen=false; tabletOverlay.classList.remove('active'); if(tabletModel) tabletModel.visible=false; playClickSound(); updateUI(); updateAnimatronicVisibility(); });
-
       backToMenuBtn.addEventListener('click',()=>{ winOverlay.classList.remove('active'); mainMenu.classList.add('active'); gameUI.classList.remove('active'); gameRunning=false;gameOver=false;playerWon=false; resetGameState(); });
-
-      droneBtn.addEventListener('click', () => {
-        if (!gameRunning || gameOver || playerWon) return;
-        setFlyMode(!flyMode);
-        playClickSound();
-      });
-
+      droneBtn.addEventListener('click',()=>{ if(!gameRunning||gameOver||playerWon) return; setFlyMode(!flyMode); playClickSound(); });
       window.addEventListener('resize',()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); });
 
-      window.addEventListener('keydown', (e) => {
-        if (!gameRunning || gameOver || playerWon || flyMode) return;
-        if (e.key.toLowerCase() === 'a') { doorLeftClosed=!doorLeftClosed; if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; playClickSound(); }
-        if (e.key.toLowerCase() === 'd') { doorRightClosed=!doorRightClosed; if(rightDoorPanel) rightDoorPanel.position.y=doorRightClosed?-1.5:1.15; playClickSound(); }
-        if (e.key.toLowerCase() === 'q') lon('left');
-        if (e.key.toLowerCase() === 'e') lon('right');
-        if (e.key === ' ') { e.preventDefault(); openTabletBtn.click(); }
+      // Klavye kontrolleri (normal mod)
+      window.addEventListener('keydown',(e)=>{
+        if(!gameRunning||gameOver||playerWon||flyMode) return;
+        if(e.key.toLowerCase()==='a'){ doorLeftClosed=!doorLeftClosed; if(leftDoorPanel) leftDoorPanel.position.y=doorLeftClosed?-1.5:1.15; playClickSound(); }
+        if(e.key.toLowerCase()==='d'){ doorRightClosed=!doorRightClosed; if(rightDoorPanel) rightDoorPanel.position.y=doorRightClosed?-1.5:1.15; playClickSound(); }
+        if(e.key.toLowerCase()==='q') lon('left');
+        if(e.key.toLowerCase()==='e') lon('right');
+        if(e.key===' '){ e.preventDefault(); openTabletBtn.click(); }
         updateUI(); updateAnimatronicVisibility();
       });
-      window.addEventListener('keyup', (e) => {
-        if (!gameRunning || gameOver || playerWon || flyMode) return;
-        if (e.key.toLowerCase() === 'q') loff('left');
-        if (e.key.toLowerCase() === 'e') loff('right');
+      window.addEventListener('keyup',(e)=>{
+        if(!gameRunning||gameOver||playerWon||flyMode) return;
+        if(e.key.toLowerCase()==='q') loff('left');
+        if(e.key.toLowerCase()==='e') loff('right');
         updateUI(); updateAnimatronicVisibility();
       });
     }
 
-    // ==================== OYUN DÖNGÜSÜ ====================
+    // Oyun döngüsü
     function gameLoop(ts) {
       requestAnimationFrame(gameLoop);
-      if (lastTimestamp === 0) lastTimestamp = ts;
-      const dt = Math.min(0.1, (ts - lastTimestamp) / 1000);
-      lastTimestamp = ts;
+      if (lastTimestamp===0) lastTimestamp=ts;
+      const dt = Math.min(0.1, (ts-lastTimestamp)/1000);
+      lastTimestamp=ts;
 
-      if (gameRunning && !gameOver && !playerWon) {
-        if (flyMode) {
+      if(gameRunning && !gameOver && !playerWon) {
+        if(flyMode) {
           handleFlyMovement(dt);
         } else {
-          updateAI(tabletOpen ? dt * 0.3 : dt);
+          updateAI(tabletOpen ? dt*0.3 : dt);
           updatePowerConsumption(dt);
           updateTime(dt);
           updateUI();
-          if (tabletOpen) updateCameraIndicators();
+          if(tabletOpen) updateCameraIndicators();
         }
       }
       renderer.render(scene, camera);
     }
 
-    // ==================== BAŞLAT ====================
     async function init() {
       buildCameraGrid();
       setupEventListeners();
       resetGameState();
+      setupPanControls(); // normal kamera döndürme
       await loadAllModels();
       requestAnimationFrame(gameLoop);
     }
