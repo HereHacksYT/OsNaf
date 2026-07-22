@@ -300,11 +300,33 @@
     rightDoorLight.position.set(4,1.5,-2); rightDoorLight.target.position.set(4,0.5,-5);
     rightDoorLight.visible = false; scene.add(rightDoorLight); scene.add(rightDoorLight.target);
 
-    // Uçuş modu ışıkları (zaten yeterince aydınlık, ekstra parlama olmasın diye düşük ekledim)
+    // Uçuş modu ışığı
     const droneLight = new THREE.PointLight(0xffffff, 2, 20);
     droneLight.position.set(0,0,0);
     droneLight.visible = false;
     camera.add(droneLight);
+
+    // 🪟 Pencere Blokları
+    const leftWindowBlock = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.1, 1.4),
+      new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5, metalness: 0.2, transparent: true, opacity: 0.95 })
+    );
+    leftWindowBlock.position.set(-1.65, 1.5, -0.55);
+    scene.add(leftWindowBlock);
+
+    const rightWindowBlock = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.1, 1.4),
+      new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5, metalness: 0.2, transparent: true, opacity: 0.95 })
+    );
+    rightWindowBlock.position.set(1.6, 1.65, -0.45);
+    scene.add(rightWindowBlock);
+
+    // Robot pozisyonları
+    const leftDoorPos = new THREE.Vector3(-2.4, 0.2, -0.7);
+    const rightDoorPos = new THREE.Vector3(2.4, 0.2, -0.7);
+    const leftHallPos = new THREE.Vector3(-3.5, 0.2, -1.5);
+    const rightHallPos = new THREE.Vector3(3.5, 0.2, -1.5);
+    const officeCenter = new THREE.Vector3(0, 1, -1);
 
     let leftDoorPanel, rightDoorPanel;
     function createSimpleDoorPanels() {
@@ -550,6 +572,8 @@
       if(rightDoorPanel) rightDoorPanel.position.y=1.15;
       leftDoorLight.visible=rightDoorLight.visible=false;
       if(tabletModel) tabletModel.visible=false;
+      leftWindowBlock.visible = true;
+      rightWindowBlock.visible = true;
       updateUI(); tabletOverlay.classList.remove('active');
       currentCameraIndex=0; updateCameraSelection(); updateCurrentCamLabel();
       if(flyMode) setFlyMode(false);
@@ -618,10 +642,13 @@
       doorRightBtn.textContent=doorRightClosed?'🚪 KAPALI':'🚪 AÇIK'; doorRightBtn.classList.toggle('door-closed',doorRightClosed);
       lightLeftBtn.classList.toggle('light-on',lightLeftOn); lightRightBtn.classList.toggle('light-on',lightRightOn);
       openTabletBtn.classList.toggle('pressed',tabletOpen);
+      // Pencere blokları ışıkla kontrol
+      leftWindowBlock.visible = !lightLeftOn;
+      rightWindowBlock.visible = !lightRightOn;
     }
 
     function updateAnimatronicVisibility() {
-      const l=new THREE.Vector3(-4,1,-4.5), r=new THREE.Vector3(4,1,-4.5), c=new THREE.Vector3(0,1,-1);
+      const l=leftDoorPos, r=rightDoorPos, c=officeCenter;
       animatronics.bonnie.group.visible=(animatronics.bonnie.position===5&&!doorLeftClosed);
       if(animatronics.bonnie.group.visible) animatronics.bonnie.group.position.copy(l);
       animatronics.chica.group.visible=(animatronics.chica.position===5&&!doorRightClosed);
@@ -630,7 +657,7 @@
       if(animatronics.freddy.group.visible) animatronics.freddy.group.position.copy(r);
       animatronics.foxy.group.visible=(animatronics.foxy.position>=3&&animatronics.foxy.position<=4);
       if(animatronics.foxy.position===3&&!doorLeftClosed) animatronics.foxy.group.position.copy(l);
-      else if(animatronics.foxy.position===4){ animatronics.foxy.group.position.copy(c); if(gameRunning && !flyMode) endNight(false); }
+      else if(animatronics.foxy.position===4){ animatronics.foxy.group.position.copy(c); if(gameRunning&&!flyMode) endNight(false); }
       if(doorLeftClosed){ if(animatronics.bonnie.position===5) animatronics.bonnie.group.visible=false; if(animatronics.foxy.position===3) animatronics.foxy.group.visible=false; }
       if(doorRightClosed){ if(animatronics.chica.position===5) animatronics.chica.group.visible=false; if(animatronics.freddy.position===6) animatronics.freddy.group.visible=false; }
     }
@@ -730,7 +757,6 @@
       if (gameRunning && !gameOver && !playerWon) {
         if (flyMode) {
           handleFlyMovement(dt);
-          // Uçuş modunda güç, zaman, AI sabit kalır
         } else {
           updateAI(tabletOpen ? dt * 0.3 : dt);
           updatePowerConsumption(dt);
